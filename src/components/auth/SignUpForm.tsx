@@ -7,6 +7,7 @@ import {
   ShoppingBag,
   ArrowRight,
 } from "lucide-react";
+import { toast, Toaster } from "sonner";
 
 type UserType = "CUSTOMER" | "SELLER";
 
@@ -15,6 +16,7 @@ interface SignupFormData {
   lastName: string;
   email: string;
   password: string;
+  confirmPassword: string;
   phoneNumber: string;
   gender: string;
   userType: UserType;
@@ -26,13 +28,18 @@ const SignupPage: FC = () => {
     lastName: "",
     email: "",
     password: "",
+    confirmPassword: "",
     phoneNumber: "",
     gender: "",
     userType: "CUSTOMER",
   });
 
-  const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof SignupFormData, string>>
+  >({});
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -40,19 +47,140 @@ const SignupPage: FC = () => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const validateForm = () => {
+    // We'll return a single error object with the first encountered error
+    const newErrors: Partial<Record<keyof SignupFormData, string>> = {};
+
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = "First name is required";
+      return newErrors;
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = "Last name is required";
+      return newErrors;
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+      return newErrors;
+    } else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(formData.email)) {
+      newErrors.email = "Invalid email address";
+      return newErrors;
+    }
+
+    if (!formData.password) {
+      newErrors.password = "Password is required";
+      return newErrors;
+    }
+
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = "Confirm password is required";
+      return newErrors;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+      toast.error("Password mismatch", {
+        description: "Passwords do not match",
+      });
+      return newErrors;
+    }
+
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = "Phone number is required";
+      return newErrors;
+    } else if (!/^\d{10}$/.test(formData.phoneNumber)) {
+      newErrors.phoneNumber = "Phone number must be exactly 10 digits";
+      return newErrors;
+    }
+
+    if (!formData.gender) {
+      newErrors.gender = "Gender is required";
+      return newErrors;
+    }
+
+    const termsCheckbox = document.getElementById(
+      "terms"
+    ) as HTMLInputElement | null;
+    if (termsCheckbox && !termsCheckbox.checked) {
+      toast.error("Terms not accepted", {
+        description: "You must accept the Terms and Privacy Policy",
+      });
+      return {}; // no field-specific error, just toast
+    }
+
+    return {}; // no errors
+  };
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate form submission
-    setTimeout(() => {
+
+    // Validate client-side first
+    const formErrors = validateForm();
+    if (Object.keys(formErrors).length > 0) {
+      setErrors(formErrors);
       setIsLoading(false);
-      alert("Signup form submitted!");
-    }, 2000);
+      return;
+    }
+
+    setErrors({});
+
+    try {
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Show toast for server-side errors
+        const errorMessage = data.message || "Something went wrong";
+
+        if (errorMessage.includes("already exists")) {
+          toast.error("Sign up failed", {
+            description: "User already exists",
+          });
+        } else {
+          toast.error("Sign up failed", {
+            description: errorMessage,
+          });
+        }
+
+        setIsLoading(false);
+        return;
+      }
+
+      toast.success("Signup Successful", {
+        description: "Your account has been created",
+      });
+      // Reset all fields
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        phoneNumber: "",
+        gender: "",
+        userType: "CUSTOMER",
+      });
+
+      // router.push("/login");
+    } catch (err) {
+      toast.error("Signup Failed", {
+        description: (err as Error).message,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center p-4 overflow-hidden relative">
-      {/* Background and floating elements omitted for brevity, keep original */}
+      <Toaster position="top-center" richColors />
 
       <div className="w-full max-w-2xl relative z-10 transform hover:scale-105 transition-transform duration-300">
         <form
@@ -110,50 +238,78 @@ const SignupPage: FC = () => {
           <div className="space-y-4">
             {/* First & Last Name */}
             <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col">
+                <div className="min-h-[1rem]">
+                  {errors.firstName && (
+                    <p className="text-red-500 text-xs">{errors.firstName}</p>
+                  )}
+                </div>
+
+                <input
+                  type="text"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  placeholder="First Name"
+                  className="w-full pl-3 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200"
+                />
+              </div>
+
+              <div className="flex flex-col">
+                <div className="min-h-[1rem]">
+                  {errors.lastName && (
+                    <p className="text-red-500 text-xs mb-1">
+                      {errors.lastName}
+                    </p>
+                  )}
+                </div>
+                <input
+                  type="text"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  placeholder="Last Name"
+                  className="w-full pl-3 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200"
+                />
+              </div>
+            </div>
+
+            {/* Email */}
+            <div className="flex flex-col">
+              <div className="min-h-[1rem]">
+                {errors.email && (
+                  <p className="text-red-500 text-xs mb-1">{errors.email}</p>
+                )}
+              </div>
               <input
-                type="text"
-                name="firstName"
-                value={formData.firstName}
+                type="email"
+                name="email"
+                value={formData.email}
                 onChange={handleChange}
-                placeholder="First Name"
-                className="w-full pl-10 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:bg-white/15 transition-all duration-300 text-sm"
-                required
-              />
-              <input
-                type="text"
-                name="lastName"
-                value={formData.lastName}
-                onChange={handleChange}
-                placeholder="Last Name"
-                className="w-full pl-10 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:bg-white/15 transition-all duration-300 text-sm"
-                required
+                placeholder="Email Address"
+                className="w-full pl-3 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200"
               />
             </div>
 
-            {/* Email & Password */}
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Email Address"
-              className="w-full pl-10 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:bg-white/15 transition-all duration-300"
-              required
-            />
-            <div className="relative">
+            {/* Password */}
+            <div className="flex flex-col relative">
+              <div className="min-h-[1rem]">
+                {errors.password && (
+                  <p className="text-red-500 text-xs mb-1">{errors.password}</p>
+                )}
+              </div>
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="Password"
-                className="w-full pl-10 pr-10 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:bg-white/15 transition-all duration-300"
-                required
+                className="w-full pl-3 pr-10 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-purple-300 hover:text-white transition-colors"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-purple-300 hover:text-white"
               >
                 {showPassword ? (
                   <EyeOff className="h-4 w-4" />
@@ -163,28 +319,75 @@ const SignupPage: FC = () => {
               </button>
             </div>
 
+            {/* Confirm Password */}
+            <div className="flex flex-col relative">
+              <div className="min-h-[1rem]">
+                {errors.confirmPassword && (
+                  <p className="text-red-500 text-xs mb-1">
+                    {errors.confirmPassword}
+                  </p>
+                )}
+              </div>
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="Confirm Password"
+                className="w-full pl-3 pr-10 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-purple-300 hover:text-white"
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+
             {/* Phone & Gender */}
             <div className="grid grid-cols-2 gap-4">
-              <input
-                type="tel"
-                name="phoneNumber"
-                value={formData.phoneNumber}
-                onChange={handleChange}
-                placeholder="Phone (Optional)"
-                className="w-full pl-10 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:bg-white/15 transition-all duration-300 text-sm"
-              />
-              <select
-                name="gender"
-                value={formData.gender}
-                onChange={handleChange}
-                className="w-full px-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:bg-white/15 transition-all duration-300 text-sm"
-              >
-                <option value="">Select Gender</option>
-                <option value="MALE">Male</option>
-                <option value="FEMALE">Female</option>
-                <option value="OTHER">Other</option>
-                <option value="PREFER_NOT_TO_SAY">Prefer not to say</option>
-              </select>
+              <div className="flex flex-col">
+                <div className="min-h-[1rem]">
+                  {errors.phoneNumber && (
+                    <p className="text-red-500 text-xs mb-1">
+                      {errors.phoneNumber}
+                    </p>
+                  )}
+                </div>
+                <input
+                  type="tel"
+                  name="phoneNumber"
+                  value={formData.phoneNumber}
+                  onChange={handleChange}
+                  placeholder="Phone (Optional)"
+                  className="w-full pl-3 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200"
+                />
+              </div>
+
+              <div className="flex flex-col">
+                <div className="min-h-[1rem]">
+                  {errors.gender && (
+                    <p className="text-red-500 text-xs mb-1">{errors.gender}</p>
+                  )}
+                </div>
+                <select
+                  name="gender"
+                  value={formData.gender}
+                  onChange={handleChange}
+                  className="w-full px-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white"
+                >
+                  <option value="">Select Gender</option>
+                  <option value="MALE">Male</option>
+                  <option value="FEMALE">Female</option>
+                  <option value="OTHER">Other</option>
+                  <option value="PREFER_NOT_TO_SAY">Prefer not to say</option>
+                </select>
+              </div>
             </div>
 
             {/* Terms */}
@@ -192,8 +395,7 @@ const SignupPage: FC = () => {
               <input
                 type="checkbox"
                 id="terms"
-                className="mt-1 w-4 h-4 text-purple-600 bg-white/10 border-white/30 rounded focus:ring-purple-500 focus:ring-2"
-                required
+                className="mt-1 w-4 h-4 text-purple-600 bg-white/10 border-white/30 rounded"
               />
               <label htmlFor="terms" className="text-sm text-purple-200">
                 I agree to the{" "}
@@ -213,18 +415,17 @@ const SignupPage: FC = () => {
               </label>
             </div>
 
-            {/* Submit Button */}
+            {/* Submit */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 group"
+              className="w-full py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full mx-auto animate-spin" />
               ) : (
                 <span className="flex items-center justify-center gap-2">
-                  Create Account{" "}
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  Create Account <ArrowRight className="w-4 h-4" />
                 </span>
               )}
             </button>
@@ -234,7 +435,7 @@ const SignupPage: FC = () => {
           <div className="mt-6 text-center">
             <p className="text-purple-200">
               Already have an account?{" "}
-              <button className="text-pink-300 hover:text-pink-200 font-semibold transition-colors hover:underline">
+              <button className="text-pink-300 hover:text-pink-200 font-semibold underline">
                 Sign in
               </button>
             </p>
