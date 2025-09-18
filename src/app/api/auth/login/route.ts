@@ -2,12 +2,20 @@ import { prisma } from "@/lib/prisma";
 import { compare } from "bcryptjs";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import jwt from "jsonwebtoken";
+
 
 const loginSchema = z.object({
     email: z.email({ message: "Invalid email address" }),
     password: z.string().min(6, { message: "Password must be at least 6 characters" }),
 })
+
+
+
 export async function POST(request: NextRequest) {
+    const JWT_SECRET = process.env.JWT_SECRET;
+
+    if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined in environment variables");
 
     try {
         const body = await request.json()
@@ -34,7 +42,18 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
         }
 
-        return NextResponse.json({ message: "Login successful", userId: user.id, redirect: '/home', userType: user.userType });
+        const token = jwt.sign(
+            {
+                userId: user.id,
+                email: user.email,
+                userType: user.userType,
+            },
+            JWT_SECRET, {
+            expiresIn: '1h'
+        }
+        )
+
+        return NextResponse.json({ message: "Login successful", token, redirect: '/home', userType: user.userType });
 
 
     } catch (error) {

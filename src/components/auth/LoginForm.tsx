@@ -1,6 +1,9 @@
-import React, { useState, FC, FormEvent, ChangeEvent } from "react";
+"use client";
+
+import React, { useState, FC, FormEvent, ChangeEvent, useEffect } from "react";
 import { Eye, EyeOff, Mail, Lock, ShoppingBag, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 interface LoginFormData {
   email: string;
@@ -13,6 +16,15 @@ const LoginPage: FC = () => {
   });
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("token");
+    if (token) {
+      router.push("/home");
+    }
+  }, [router]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -31,9 +43,11 @@ const LoginPage: FC = () => {
       });
       const result = await response.json();
       if (response.ok) {
+        sessionStorage.setItem("token", result.token);
         toast.success(result.message);
-        // redirect to backend-sent redirect
-        window.location.href = result.redirect;
+        router.push(result.redirect || "/home");
+
+        // window.location.href = result.redirect;
       } else {
         toast.error(result.message || "Login failed");
       }
@@ -47,8 +61,6 @@ const LoginPage: FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4 overflow-hidden relative">
-      {/* Background and floating elements omitted for brevity, keep as your original */}
-
       <div className="w-full max-w-md relative z-10 transform hover:scale-105 transition-transform duration-300">
         <form
           className="backdrop-blur-xl bg-white/10 rounded-3xl shadow-2xl border border-white/20 p-8 hover:bg-white/15 transition-all duration-300"

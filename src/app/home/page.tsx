@@ -1,10 +1,55 @@
-// pages/index.tsx
+"use client";
 import Head from "next/head";
 import { Inter } from "next/font/google";
-
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import jwt_decode from "jwt-decode";
 const inter = Inter({ subsets: ["latin"] });
 
+interface TokenData {
+  userId: string;
+  email: string;
+  userType: string;
+  exp: number;
+}
+
 export default function Home() {
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("token");
+    if (!token) {
+      router.push("/auth");
+    }
+
+    try {
+      const decoded: TokenData = jwt_decode(token);
+      const currentTime = Date.now() / 1000; // in seconds
+      if (decoded.exp < currentTime) {
+        // Token expired
+        sessionStorage.removeItem("token");
+        router.push("/auth");
+        return;
+      } else {
+        setUser({
+          id: decoded.userId,
+          email: decoded.email,
+          userType: decoded.userType,
+        });
+      }
+    } catch (error) {
+      console.error("Invalid token:", error);
+      sessionStorage.removeItem("token");
+      router.push("/auth");
+      return;
+    }
+  }, [router]);
+
+  const handleLogout = () => {
+    sessionStorage.removeItem("token");
+    router.push("/auth");
+  };
   return (
     <div className={`min-h-screen bg-gray-50 ${inter.className}`}>
       <Head>
@@ -46,6 +91,14 @@ export default function Home() {
               Contact
             </a>
           </nav>
+          <div className="text-gray-700 hover:text-blue-600 transition-colors">
+            <button
+              onClick={handleLogout}
+              className="bg-green-100 text-blue-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors"
+            >
+              Logout{" "}
+            </button>
+          </div>
           <button className="md:hidden text-gray-700">
             <svg
               className="w-6 h-6"
@@ -68,7 +121,7 @@ export default function Home() {
       <section className="py-16 bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            Welcome to Our Website
+            Welcome to Our Website,{user ? ` ${user.name}` : ""}
           </h1>
           <p className="text-xl mb-8 max-w-2xl mx-auto">
             Discover amazing features and services that we offer to our
@@ -176,9 +229,6 @@ export default function Home() {
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
             Join thousands of satisfied customers using our services.
           </p>
-          <button className="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-            Sign Up Now
-          </button>
         </div>
       </section>
 
