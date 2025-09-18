@@ -381,11 +381,21 @@ const SignupPage: FC = () => {
                   onChange={handleChange}
                   className="w-full px-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white"
                 >
-                  <option value="">Select Gender</option>
-                  <option value="MALE">Male</option>
-                  <option value="FEMALE">Female</option>
-                  <option value="OTHER">Other</option>
-                  <option value="PREFER_NOT_TO_SAY">Prefer not to say</option>
+                  <option className="text-black" value="">
+                    Select Gender
+                  </option>
+                  <option className="text-black" value="MALE">
+                    Male
+                  </option>
+                  <option className="text-black" value="FEMALE">
+                    Female
+                  </option>
+                  <option className="text-black" value="OTHER">
+                    Other
+                  </option>
+                  <option className="text-black" value="PREFER_NOT_TO_SAY">
+                    Prefer not to say
+                  </option>
                 </select>
               </div>
             </div>
