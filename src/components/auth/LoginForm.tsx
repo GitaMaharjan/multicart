@@ -1,20 +1,48 @@
 import React, { useState, FC, FormEvent, ChangeEvent } from "react";
 import { Eye, EyeOff, Mail, Lock, ShoppingBag, ArrowRight } from "lucide-react";
+import { toast } from "sonner";
 
+interface LoginFormData {
+  email: string;
+  password: string;
+}
 const LoginPage: FC = () => {
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
+  const [loginData, setLoginData] = useState<LoginFormData>({
+    email: "",
+    password: "",
+  });
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setLoginData((prevData) => ({ ...prevData, [name]: value }));
+  };
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate form submission
-    setTimeout(() => {
+
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(loginData),
+      });
+      const result = await response.json();
+      if (response.ok) {
+        toast.success(result.message);
+        // redirect to backend-sent redirect
+        window.location.href = result.redirect;
+      } else {
+        toast.error(result.message || "Login failed");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("An unexpected error occurred. Please try again.");
+    } finally {
       setIsLoading(false);
-      alert("Login form submitted!");
-    }, 2000);
+    }
   };
 
   return (
@@ -48,10 +76,9 @@ const LoginPage: FC = () => {
               </div>
               <input
                 type="email"
-                value={email}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setEmail(e.target.value)
-                }
+                name="email"
+                value={loginData.email}
+                onChange={handleChange}
                 placeholder="Enter your email"
                 className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:bg-white/15 transition-all duration-300"
                 required
@@ -65,10 +92,9 @@ const LoginPage: FC = () => {
               </div>
               <input
                 type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setPassword(e.target.value)
-                }
+                name="password"
+                value={loginData.password}
+                onChange={handleChange}
                 placeholder="Enter your password"
                 className="w-full pl-12 pr-12 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:bg-white/15 transition-all duration-300"
                 required

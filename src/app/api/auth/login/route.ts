@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
         }
 
-        return NextResponse.json({ message: "Login successful", userId: user.id, redirect: '/dashboard', userType: user.userType });
+        return NextResponse.json({ message: "Login successful", userId: user.id, redirect: '/home', userType: user.userType });
 
 
     } catch (error) {
