@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, FC, FormEvent, ChangeEvent, useEffect } from "react";
+import React, { useState, FC, FormEvent, ChangeEvent } from "react";
 import { Eye, EyeOff, Mail, Lock, ShoppingBag, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -19,13 +19,6 @@ const LoginPage: FC = () => {
 
   const router = useRouter();
 
-  useEffect(() => {
-    const token = sessionStorage.getItem("token");
-    if (token) {
-      router.push("/home");
-    }
-  }, [router]);
-
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setLoginData((prevData) => ({ ...prevData, [name]: value }));
@@ -43,11 +36,8 @@ const LoginPage: FC = () => {
       });
       const result = await response.json();
       if (response.ok) {
-        sessionStorage.setItem("token", result.token);
         toast.success(result.message);
         router.push(result.redirect || "/home");
-
-        // window.location.href = result.redirect;
       } else {
         toast.error(result.message || "Login failed");
       }

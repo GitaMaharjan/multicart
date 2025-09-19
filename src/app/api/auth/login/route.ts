@@ -53,9 +53,18 @@ export async function POST(request: NextRequest) {
         }
         )
 
-        return NextResponse.json({ message: "Login successful", token, redirect: '/home', userType: user.userType });
+        const res = NextResponse.json({ message: "Login successful", token, redirect: '/home', userType: user.userType });
 
-
+        res.cookies.set({
+            name: "token",
+            value: token,
+            httpOnly: true,
+            path: "/",
+            maxAge: 60 * 60, // 1 hour
+            sameSite: "strict",
+            secure: process.env.NODE_ENV === "production",
+        });
+        return res
     } catch (error) {
         console.error(error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

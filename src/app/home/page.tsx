@@ -6,50 +6,61 @@ import { useEffect, useState } from "react";
 import jwt_decode from "jwt-decode";
 const inter = Inter({ subsets: ["latin"] });
 
-interface TokenData {
+interface UserData {
   userId: string;
   email: string;
   userType: string;
-  exp: number;
+  name?: string;
 }
 
 export default function Home() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = sessionStorage.getItem("token");
-    if (!token) {
-      router.push("/auth");
-    }
-
-    try {
-      const decoded: TokenData = jwt_decode(token);
-      const currentTime = Date.now() / 1000; // in seconds
-      if (decoded.exp < currentTime) {
-        // Token expired
-        sessionStorage.removeItem("token");
-        router.push("/auth");
-        return;
-      } else {
-        setUser({
-          id: decoded.userId,
-          email: decoded.email,
-          userType: decoded.userType,
+    async function fetchUser() {
+      try {
+        const response = await fetch("/api/me", {
+          method: "GET",
+          credentials: "include",
         });
+
+        if (!response.ok) {
+          // Not authenticated → redirect to login
+          router.push("/auth");
+          return;
+        }
+        const data = await response.json();
+        setUser(data);
+      } catch (error) {
+        console.error("Error fetching user:", error);
+        router.push("/auth");
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Invalid token:", error);
-      sessionStorage.removeItem("token");
-      router.push("/auth");
-      return;
     }
+    fetchUser();
   }, [router]);
 
-  const handleLogout = () => {
-    sessionStorage.removeItem("token");
-    router.push("/auth");
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+      router.push("/auth");
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
   };
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-600">
+        Loading...
+      </div>
+    );
+  }
   return (
     <div className={`min-h-screen bg-gray-50 ${inter.className}`}>
       <Head>
