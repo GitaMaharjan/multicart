@@ -36,8 +36,12 @@ const LoginPage: FC = () => {
       });
       const result = await response.json();
       if (response.ok) {
-        toast.success(result.message);
-        router.push(result.redirect || "/home");
+        if (result.userType === "SELLER") {
+          router.push(result.redirect || "/seller/dashboard");
+        } else if (result.userType === "CUSTOMER") {
+          toast.success(result.message);
+          router.push(result.redirect || "/home");
+        }
       } else {
         toast.error(result.message || "Login failed");
       }

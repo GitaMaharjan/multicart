@@ -23,8 +23,18 @@ export function middleware(req: NextRequest) {
     }
 
     try {
-        jwt.verify(token, JWT_SECRET);
-        // Token is valid → allow request
+        const decoded = jwt.verify(token, JWT_SECRET) as { userType: string }
+
+        if (pathname.startsWith("/seller") && decoded.userType !== "SELLER") {
+            const homeUrl = new URL("/home", req.url);
+            return NextResponse.redirect(homeUrl)
+        }
+        // Restrict home to customers only
+        if (pathname.startsWith("/home") && decoded.userType === "SELLER") {
+            const dashboardUrl = new URL("/seller/dashboard", req.url);
+            return NextResponse.redirect(dashboardUrl);
+        }
+
         return NextResponse.next();
     } catch (err) {
         const loginUrl = new URL("/auth", req.url);
@@ -36,7 +46,7 @@ export function middleware(req: NextRequest) {
 export const config = {
     matcher: [
         "/home/:path*",       // protect /home
-        "/dashboard/:path*",  // protect dashboard
+        "/seller/:path*",  // protect dashboard
         "/api/:path*",        // protect API routes
     ],
 };
