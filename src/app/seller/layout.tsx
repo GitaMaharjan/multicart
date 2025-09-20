@@ -10,6 +10,7 @@ import {
   Bell,
   Settings,
   LogOut,
+  Store,
 } from "lucide-react";
 
 interface SellerLayoutProps {
@@ -43,6 +44,12 @@ const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
       icon: ClipboardList,
       label: "Orders",
       href: "/seller/orders",
+    },
+    {
+      id: "store",
+      icon: Store,
+      label: "Stores",
+      href: "/seller/store",
     },
     { id: "profile", icon: User, label: "Profile", href: "/seller/profile" },
   ];
