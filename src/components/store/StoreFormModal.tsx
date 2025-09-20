@@ -9,11 +9,7 @@ interface StoreModalProps {
     name: string;
     description: string;
   };
-  currentSeller: {
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
+
   onClose: () => void;
   onChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -25,7 +21,6 @@ const StoreFormModal: React.FC<StoreModalProps> = ({
   isOpen,
   isLoading,
   formData,
-  currentSeller,
   onClose,
   onChange,
   onSubmit,
@@ -101,10 +96,6 @@ const StoreFormModal: React.FC<StoreModalProps> = ({
                 <h4 className="text-sm font-medium text-blue-900">
                   Store Owner
                 </h4>
-                <p className="text-sm text-blue-700">
-                  {currentSeller.firstName} {currentSeller.lastName}
-                </p>
-                <p className="text-xs text-blue-600">{currentSeller.email}</p>
               </div>
             </div>
           </div>

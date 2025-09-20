@@ -46,6 +46,7 @@ const CategoriesPage = () => {
   useEffect(() => {
     fetchCategories();
   }, []);
+
   const handleSubmit = async (data: CategoryFormData) => {
     try {
       const response = await fetch("/api/category", {
