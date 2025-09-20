@@ -8,33 +8,30 @@ datasource db {
 }
 
 model User {
-  id                String      @id @default(uuid())
-  firstName         String      @db.VarChar(100)
-  lastName          String      @db.VarChar(100)
-  email             String      @unique @db.VarChar(255)
-  password          String      @db.VarChar(255) 
-  phoneNumber       String?     @db.VarChar(20)
-  gender            Gender?
-  registrationDate  DateTime    @default(now())
-  lastLogin         DateTime?
-  profileImage      String?     @db.VarChar(500)
-  userType          UserType    @default(CUSTOMER)
-  status            UserStatus  @default(ACTIVE)
-  isVerifiedSeller  Boolean     @default(false)
+  id               String      @id @default(uuid())
+  firstName        String      @db.VarChar(100)
+  lastName         String      @db.VarChar(100)
+  email            String      @unique @db.VarChar(255)
+  password         String      @db.VarChar(255)
+  phoneNumber      String     @db.VarChar(20)
+  gender           Gender
+  registrationDate DateTime    @default(now())
+  lastLogin        DateTime?
+  profileImage     String?     @db.VarChar(500)
+  userType         UserType    @default(CUSTOMER)
+  status           UserStatus  @default(ACTIVE)
+  isVerifiedSeller Boolean     @default(false)
 
-  // Relationships
-  reports           Report[]
-  payments          Payment[]
-  orders            Order[]
-  cart              Cart?
-  reviews           Review[]
-  stores            Store[]
+  // Relations
+  stores           Store[]
 
-  // Indexes for performance optimization
-  @@index([email])
+  // Indexes
   @@index([registrationDate])
   @@index([status])
   @@index([userType])
+
+  @@map("users")  
+
 }
 
 enum Gender {
@@ -57,92 +54,47 @@ enum UserType {
   ADMIN
 }
 
-model Report {
-  id        String   @id @default(uuid())
-  title     String
-  content   String
-  createdAt DateTime @default(now())
-  
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
+model Store {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  seller      User       @relation(fields: [sellerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  sellerId    String
+  categories  Category[]
+  products    Product[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@map("stores")
+
 }
 
-model Payment {
-  id        String   @id @default(uuid())
-  amount    Float
-  status    String
-  createdAt DateTime @default(now())
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  store       Store     @relation(fields: [storeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  storeId     String
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-}
+  @@map("categories")
 
-model Order {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-  total     Float
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  products  OrderProduct[]
-}
-
-model OrderProduct {
-  id        String   @id @default(uuid())
-  orderId   String
-  productId String
-
-  order     Order   @relation(fields: [orderId], references: [id])
-  product   Product @relation(fields: [productId], references: [id])
-}
-
-model Cart {
-  id        String   @id @default(uuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id])
-  items     CartItem[]
-}
-
-model CartItem {
-  id        String   @id @default(uuid())
-  cartId    String
-  productId String
-  quantity  Int
-
-  cart      Cart    @relation(fields: [cartId], references: [id])
-  product   Product @relation(fields: [productId], references: [id])
 }
 
 model Product {
-  id        String   @id @default(uuid())
-  name      String
-  price     Float
-  stock     Int
-  createdAt DateTime @default(now())
-  
-  reviews   Review[]
-  cartItems CartItem[]
-  orders    OrderProduct[]
-  storeId   String?
-  store     Store?   @relation(fields: [storeId], references: [id])
-}
+  id         String    @id @default(cuid())
+  name       String
+  price      Float
+  stock      Int
+  store      Store?    @relation(fields: [storeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  storeId    String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  categoryId String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
-model Review {
-  id        String   @id @default(uuid())
-  content   String
-  rating    Int
-  createdAt DateTime @default(now())
+  @@map("products")
 
-  userId    String
-  productId String
-  user      User    @relation(fields: [userId], references: [id])
-  product   Product @relation(fields: [productId], references: [id])
-}
-
-model Store {
-  id        String   @id @default(uuid())
-  name      String
-  createdAt DateTime @default(now())
-  ownerId   String
-  owner     User     @relation(fields: [ownerId], references: [id])
-  products  Product[]
 }

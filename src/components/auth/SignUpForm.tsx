@@ -48,7 +48,6 @@ const SignupPage: FC = () => {
   };
 
   const validateForm = () => {
-    // We'll return a single error object with the first encountered error
     const newErrors: Partial<Record<keyof SignupFormData, string>> = {};
 
     if (!formData.firstName.trim()) {

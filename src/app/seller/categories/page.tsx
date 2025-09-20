@@ -1,234 +1,136 @@
 "use client";
-import { Edit2, Grid3X3, Plus, Trash2, X } from "lucide-react";
-import { useState } from "react";
 
-const CategoriesPage: React.FC = () => {
-  const [categories, setCategories] = useState<Category[]>([
-    {
-      id: "1",
-      name: "Electronics",
-      description: "Electronic devices and accessories",
-      createdAt: "2024-01-10T09:00:00Z",
-    },
-    {
-      id: "2",
-      name: "Wearables",
-      description: "Smart wearable technology",
-      createdAt: "2024-01-11T11:30:00Z",
-    },
-    {
-      id: "3",
-      name: "Audio",
-      description: "Headphones, speakers, and audio equipment",
-      createdAt: "2024-01-12T15:20:00Z",
-    },
-  ]);
+import { useEffect, useState } from "react";
+import { Plus, Grid3X3 } from "lucide-react";
+import CategoryCard from "@/components/Category/CategoryCard";
+import CategoryForm from "@/components/Category/CategoryForm";
+import Modal from "@/components/Category/Modal";
 
-  const [showModal, setShowModal] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [categoryForm, setCategoryForm] = useState({
-    name: "",
-    description: "",
-  });
+interface Category {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+}
 
-  const products = [
-    { id: "1", categoryId: "1" },
-    { id: "2", categoryId: "2" },
-    { id: "3", categoryId: "1" },
-    { id: "4", categoryId: "3" },
-  ];
+interface CategoryFormData {
+  name: string;
+  description?: string;
+}
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newCategory: Category = {
-      id: editingCategory ? editingCategory.id : Date.now().toString(),
-      name: categoryForm.name,
-      description: categoryForm.description,
-      createdAt: new Date().toISOString(),
-    };
+const CategoriesPage = () => {
+  const [showForm, setShowForm] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
+    null
+  );
 
-    if (editingCategory) {
-      setCategories(
-        categories.map((c) => (c.id === editingCategory.id ? newCategory : c))
-      );
-    } else {
-      setCategories([...categories, newCategory]);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  // Open modal to add new category
+  const handleAdd = () => {
+    setSelectedCategory(null);
+    setShowForm(true);
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch("/api/category");
+      const data = await res.json();
+      setCategories(data);
+    } catch (error) {
+      console.error(error);
     }
-
-    setShowModal(false);
-    setEditingCategory(null);
-    setCategoryForm({ name: "", description: "" });
   };
 
-  const editCategory = (category: Category) => {
-    setEditingCategory(category);
-    setCategoryForm({
-      name: category.name,
-      description: category.description || "",
-    });
-    setShowModal(true);
-  };
+  // Fetch categories on page load
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+  const handleSubmit = async (data: CategoryFormData) => {
+    try {
+      const response = await fetch("/api/category", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
 
-  const deleteCategory = (id: string) => {
-    setCategories(categories.filter((c) => c.id !== id));
-  };
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create category");
+      }
+      const newCategory = await response.json();
+      console.log("Created category:", newCategory);
 
-  const Modal: React.FC<{
-    isOpen: boolean;
-    onClose: () => void;
-    children: React.ReactNode;
-  }> = ({ isOpen, onClose, children }) => {
-    if (!isOpen) return null;
-
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm animate-in fade-in duration-200">
-        <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 animate-in slide-in-from-bottom-4 duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">
-              {editingCategory ? "Edit Category" : "Add New Category"}
-            </h3>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          {children}
-        </div>
-      </div>
-    );
+      setCategories((prev) => [newCategory, ...prev]);
+      setShowForm(false);
+      setSelectedCategory(null);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-10 p-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Categories Management
+          <h1 className="text-2xl sm:text-2xl font-bold text-gray-900 flex items-center gap-3">
+            <Grid3X3 className="w-7 h-7 text-indigo-500" />
+            Categories
           </h1>
-          <p className="text-gray-600 mt-1">
-            Organize your products into categories
-          </p>
+          <div className="w-20 h-1 bg-indigo-500 rounded-full mt-2 mb-3"></div>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center space-x-2 bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-300 shadow-lg hover:shadow-xl"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Add Category</span>
-        </button>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {categories.map((category) => {
-          const categoryProducts = products.filter(
-            (p) => p.categoryId === category.id
-          );
-          return (
-            <div
-              key={category.id}
-              className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all duration-300"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-r from-green-500 to-green-600 rounded-lg">
-                  <Grid3X3 className="w-6 h-6 text-white" />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => editCategory(category)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => deleteCategory(category.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {category.name}
-              </h3>
-              <p className="text-gray-600 text-sm mb-4 h-10 overflow-hidden">
-                {category.description}
-              </p>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">
-                  Products: {categoryProducts.length}
-                </span>
-                <span className="text-gray-500">
-                  Created: {new Date(category.createdAt).toLocaleDateString()}
-                </span>
-              </div>
-            </div>
-          );
-        })}
+        {/* Add Category Button */}
+        <div className="relative flex flex-col items-center group">
+          <button
+            onClick={handleAdd}
+            className="flex items-center justify-center px-5 py-2 rounded-full border border-gray-300 bg-transparent text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-all duration-300"
+          >
+            <Plus className="w-5 h-5" />
+          </button>
+          <span className="mt-1 text-sm text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            Add Category
+          </span>
+        </div>
       </div>
+      <div>
+        {categories.map((category) => (
+          <ul key={category.id}>
+            <li>{category.name}</li>
+          </ul>
+        ))}
+      </div>
+      {/* Categories Grid  */}
+      {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {categories.map((category) => (
+          <CategoryCard
+            key={category.id}
+            category={category}
+            products={products}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        ))}
+      </div> */}
 
+      {/* Modal */}
       <Modal
-        isOpen={showModal}
+        isOpen={showForm}
         onClose={() => {
-          setShowModal(false);
-          setEditingCategory(null);
-          setCategoryForm({ name: "", description: "" });
+          setShowForm(false);
+          setSelectedCategory(null);
         }}
+        title={selectedCategory ? "Edit Category" : "Add New Category"}
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Category Name
-            </label>
-            <input
-              type="text"
-              required
-              value={categoryForm.name}
-              onChange={(e) =>
-                setCategoryForm({ ...categoryForm, name: e.target.value })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              placeholder="Enter category name"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
-            </label>
-            <textarea
-              rows={3}
-              value={categoryForm.description}
-              onChange={(e) =>
-                setCategoryForm({
-                  ...categoryForm,
-                  description: e.target.value,
-                })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-              placeholder="Enter category description (optional)"
-            />
-          </div>
-          <div className="flex justify-end space-x-3 pt-4">
-            <button
-              type="button"
-              onClick={() => {
-                setShowModal(false);
-                setEditingCategory(null);
-                setCategoryForm({ name: "", description: "" });
-              }}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              {editingCategory ? "Update" : "Create"} Category
-            </button>
-          </div>
-        </form>
+        <CategoryForm
+          initialData={selectedCategory ?? undefined}
+          onSubmit={handleSubmit}
+          onCancel={() => {
+            setShowForm(false);
+            setSelectedCategory(null);
+          }}
+        />
       </Modal>
     </div>
   );
