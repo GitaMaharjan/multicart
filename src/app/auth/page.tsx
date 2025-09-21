@@ -1,10 +1,22 @@
 "use client";
 import LoginPage from "@/components/auth/LoginForm";
 import SignupPage from "@/components/auth/SignUpForm";
-import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
 
 const AuthPage = () => {
   const [currentPage, setCurrentPage] = useState<"login" | "signup">("login");
+  const router = useRouter();
+
+  useEffect(() => {
+    // Call logout API to clear token if any
+    fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "include",
+    }).finally(() => {
+      router.replace("/auth");
+    });
+  }, []);
 
   return (
     <div>

@@ -4,7 +4,10 @@ import React, { useEffect, useState } from "react";
 import StoreFormModal from "@/components/store/StoreFormModal";
 import Header from "@/components/store/Header";
 import { Store } from "lucide-react";
-import StoreCard from "@/components/store/Storecard";
+import { toast } from "sonner";
+import { redirect, useRouter } from "next/navigation";
+import Jwt from "jsonwebtoken";
+import StoreCard from "@/components/store/StoreCard";
 
 interface Store {
   id: string;
@@ -27,6 +30,7 @@ interface StoreFormData {
 
 const SellerStoreDashboard: React.FC = () => {
   const [stores, setStores] = useState<Store[]>([]);
+  const router = useRouter();
 
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [formData, setFormData] = useState<StoreFormData>({
@@ -34,7 +38,8 @@ const SellerStoreDashboard: React.FC = () => {
     description: "",
   });
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const sellerId = "62b81ce3-37a0-4778-9f17-1b2d9b36d7d4";
+
+  
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -48,13 +53,14 @@ const SellerStoreDashboard: React.FC = () => {
 
   const handleAddStore = async (): Promise<void> => {
     setIsLoading(true);
-    console.log("Submitting store:", formData, sellerId);
+    console.log("Submitting store:", formData);
 
     try {
       const response = await fetch("/api/store", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, sellerId }),
+        body: JSON.stringify(formData),
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -68,6 +74,7 @@ const SellerStoreDashboard: React.FC = () => {
       setShowAddModal(false);
     } catch (error) {
       console.log(error);
+      toast.error("Server error");
     } finally {
       setIsLoading(false);
     }
@@ -75,11 +82,19 @@ const SellerStoreDashboard: React.FC = () => {
 
   const fetchStores = async () => {
     try {
-      const res = await fetch("/api/store");
+      const res = await fetch("/api/store", {
+        credentials: "include",
+      });
+
+      if (res.status == 401) {
+        router.push("/auth");
+        return;
+      }
       const data = await res.json();
       setStores(data);
     } catch (error) {
       console.error(error);
+      router.push("/auth");
     }
   };
 

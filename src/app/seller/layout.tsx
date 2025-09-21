@@ -12,6 +12,7 @@ import {
   LogOut,
   Store,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface SellerLayoutProps {
   children: React.ReactNode;
@@ -19,6 +20,7 @@ interface SellerLayoutProps {
 
 const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const router = useRouter();
 
   const navigationItems = [
     {
@@ -66,6 +68,18 @@ const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
     };
   }, [sidebarOpen]);
 
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+      router.push("/auth");
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
+  };
+
   const Sidebar: React.FC = () => (
     <div
       className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform ${
@@ -94,7 +108,10 @@ const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
 
       {/* Logout at bottom */}
       <div className="p-4 flex-shrink-0">
-        <button className="w-full flex items-center px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+        >
           <LogOut className="w-5 h-5 mr-3" />
           Logout
         </button>
