@@ -13,7 +13,7 @@ interface StoreModalProps {
     firstName: string;
     lastName: string;
   };
-
+  isEdit?: boolean;
   onClose: () => void;
   onChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -26,6 +26,7 @@ const StoreFormModal: React.FC<StoreModalProps> = ({
   isLoading,
   formData,
   user,
+  isEdit = false,
   onClose,
   onChange,
   onSubmit,
@@ -44,7 +45,7 @@ const StoreFormModal: React.FC<StoreModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <h3 className="text-lg font-semibold text-gray-900">
-            Create New Store
+            {isEdit ? "Edit Store" : "Create Store"}
           </h3>
           <button
             onClick={onClose}
@@ -129,7 +130,11 @@ const StoreFormModal: React.FC<StoreModalProps> = ({
               {isLoading && (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               )}
-              <span>{isLoading ? "Creating..." : "Create Store"}</span>
+              <span>
+                {isLoading
+                  ? `${isEdit ? "Updating" : "Creating"}`
+                  : `${isEdit ? "Update Store" : "Create Store"}`}
+              </span>
             </button>
           </div>
         </div>

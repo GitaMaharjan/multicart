@@ -34,6 +34,8 @@ const SellerStoreDashboard: React.FC = () => {
     lastName: string;
   }>();
   const [stores, setStores] = useState<Store[]>([]);
+  const [editStore, setEditStore] = useState<Store | null>(null);
+
   const router = useRouter();
 
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
@@ -53,13 +55,16 @@ const SellerStoreDashboard: React.FC = () => {
     }));
   };
 
-  const handleAddStore = async (): Promise<void> => {
+  const handleSubmit = async (): Promise<void> => {
     setIsLoading(true);
     console.log("Submitting store:", formData);
 
     try {
-      const response = await fetch("/api/store", {
-        method: "POST",
+      const url = editStore ? `/api/store/${editStore.id}` : "/api/store";
+      const method = editStore ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method: method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
         credentials: "include",
@@ -68,18 +73,36 @@ const SellerStoreDashboard: React.FC = () => {
       if (!response.ok) {
         const err = await response.json();
         console.log(err);
-        throw new Error("Failed to create store");
+        throw new Error(
+          editStore ? "Failed to update store" : "Failed to create store"
+        );
       }
-      const newStore = await response.json();
-      setStores((prev) => [...prev, newStore]);
+      const storeData = await response.json();
+
+      if (editStore) {
+        setStores((prev) =>
+          prev.map((s) => (s.id === storeData.id ? storeData : s))
+        );
+      } else {
+        setStores((prev) => [...prev, storeData]);
+      }
+
       setFormData({ name: "", description: "" });
       setShowAddModal(false);
+      setEditStore(null);
     } catch (error) {
       console.log(error);
       toast.error("Server error");
     } finally {
       setIsLoading(false);
     }
+  };
+  const handleEditStore = (storeId: string) => {
+    const store = stores.find((s) => s.id === storeId);
+    if (!store) return;
+    setEditStore(store);
+    setFormData({ name: store.name, description: store.description || "" });
+    setShowAddModal(true);
   };
 
   const fetchStores = async () => {
@@ -106,12 +129,6 @@ const SellerStoreDashboard: React.FC = () => {
     fetchStores();
   }, []);
 
-  const handleEditStore = () => {
-    try {
-    } catch (error) {
-      console.log(error);
-    }
-  };
   return (
     <div className="min-h-screen  p-6">
       <div className="max-w-7xl mx-auto">
@@ -124,7 +141,11 @@ const SellerStoreDashboard: React.FC = () => {
           }! Manage your stores and track performance`}
           buttonLabel="Create New Store"
           isLoading={isLoading}
-          onButtonClick={() => setShowAddModal(true)}
+          onButtonClick={() => {
+            setEditStore(null); // important
+            setFormData({ name: "", description: "" });
+            setShowAddModal(true);
+          }}
         />
       </div>
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -135,7 +156,6 @@ const SellerStoreDashboard: React.FC = () => {
               store={store}
               onView={(id) => console.log("View store", id)}
               onEdit={handleEditStore}
-              onSettings={(id) => console.log("Settings store", id)}
               onDelete={(id) =>
                 setStores((prev) => prev.filter((s) => s.id !== id))
               }
@@ -154,9 +174,14 @@ const SellerStoreDashboard: React.FC = () => {
         isLoading={isLoading}
         formData={formData}
         user={user}
-        onClose={() => setShowAddModal(false)}
+        isEdit={!!editStore}
+        onClose={() => {
+          setShowAddModal(false);
+          setEditStore(null); // clear edit mode
+          setFormData({ name: "", description: "" }); // clear form
+        }}
         onChange={handleInputChange}
-        onSubmit={handleAddStore}
+        onSubmit={handleSubmit}
       />
     </div>
   );

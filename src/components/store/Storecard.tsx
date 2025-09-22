@@ -1,6 +1,6 @@
 "use client";
 
-import { Edit, Eye, Package, Settings, Trash2 } from "lucide-react";
+import { Edit, Eye, Package, Trash2 } from "lucide-react";
 
 interface Store {
   id: string;
@@ -18,7 +18,6 @@ interface StoreCardProps {
   isLoading?: boolean;
   onView: (id: string) => void;
   onEdit: (id: string) => void;
-  onSettings: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
