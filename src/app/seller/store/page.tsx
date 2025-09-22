@@ -5,7 +5,7 @@ import StoreFormModal from "@/components/store/StoreFormModal";
 import Header from "@/components/store/Header";
 import { Store } from "lucide-react";
 import { toast } from "sonner";
-import { redirect, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Jwt from "jsonwebtoken";
 import StoreCard from "@/components/store/StoreCard";
 
@@ -29,6 +29,10 @@ interface StoreFormData {
 }
 
 const SellerStoreDashboard: React.FC = () => {
+  const [user, setUser] = useState<{
+    firstName: string;
+    lastName: string;
+  }>();
   const [stores, setStores] = useState<Store[]>([]);
   const router = useRouter();
 
@@ -38,8 +42,6 @@ const SellerStoreDashboard: React.FC = () => {
     description: "",
   });
   const [isLoading, setIsLoading] = useState<boolean>(false);
-
-  
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -91,7 +93,8 @@ const SellerStoreDashboard: React.FC = () => {
         return;
       }
       const data = await res.json();
-      setStores(data);
+      setStores(data.stores);
+      setUser(data.user);
     } catch (error) {
       console.error(error);
       router.push("/auth");
@@ -102,14 +105,23 @@ const SellerStoreDashboard: React.FC = () => {
   useEffect(() => {
     fetchStores();
   }, []);
+
+  const handleEditStore = () => {
+    try {
+    } catch (error) {
+      console.log(error);
+    }
+  };
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen  p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <Header
           icon={Store}
           title="My Stores"
-          subtitle={`Welcome back, Gita! Manage your stores and track performance`}
+          subtitle={`Welcome back, ${
+            user ? user.firstName : "seller"
+          }! Manage your stores and track performance`}
           buttonLabel="Create New Store"
           isLoading={isLoading}
           onButtonClick={() => setShowAddModal(true)}
@@ -122,7 +134,7 @@ const SellerStoreDashboard: React.FC = () => {
               key={store.id}
               store={store}
               onView={(id) => console.log("View store", id)}
-              onEdit={(id) => console.log("Edit store", id)}
+              onEdit={handleEditStore}
               onSettings={(id) => console.log("Settings store", id)}
               onDelete={(id) =>
                 setStores((prev) => prev.filter((s) => s.id !== id))
@@ -141,6 +153,7 @@ const SellerStoreDashboard: React.FC = () => {
         isOpen={showAddModal}
         isLoading={isLoading}
         formData={formData}
+        user={user}
         onClose={() => setShowAddModal(false)}
         onChange={handleInputChange}
         onSubmit={handleAddStore}

@@ -9,6 +9,10 @@ interface StoreModalProps {
     name: string;
     description: string;
   };
+  user?: {
+    firstName: string;
+    lastName: string;
+  };
 
   onClose: () => void;
   onChange: (
@@ -21,6 +25,7 @@ const StoreFormModal: React.FC<StoreModalProps> = ({
   isOpen,
   isLoading,
   formData,
+  user,
   onClose,
   onChange,
   onSubmit,
@@ -28,8 +33,14 @@ const StoreFormModal: React.FC<StoreModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 p-10 bg-transparent backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full">
+    <div
+      className="fixed inset-0 p-10 bg-transparent backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-50"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-lg shadow-xl max-w-lg w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <h3 className="text-lg font-semibold text-gray-900">
@@ -93,9 +104,10 @@ const StoreFormModal: React.FC<StoreModalProps> = ({
             <div className="flex items-start space-x-3">
               <Store className="h-5 w-5 text-blue-600 mt-0.5" />
               <div>
-                <h4 className="text-sm font-medium text-blue-900">
-                  Store Owner
-                </h4>
+                <h4 className="text-sm font-bold text-blue-900">Store Owner</h4>
+                <p className="text-sm font-medium text-blue-900">
+                  {`${user?.firstName} ${user?.lastName}`}
+                </p>
               </div>
             </div>
           </div>

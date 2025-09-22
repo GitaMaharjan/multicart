@@ -49,15 +49,54 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const stores = await prisma.store.findMany({
-      orderBy: {
-        createdAt: "desc",
+    const token = request.cookies.get("token")?.value;
+
+    if (!token) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const decoded = jwt.verify(token, JWT_SECRET) as {
+      userId: string;
+      userType: string;
+    };
+
+    if (!decoded.userId || decoded.userType !== "SELLER") {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+
+    const seller = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        stores: {
+          orderBy: {
+            createdAt: "desc",
+          },
+        },
       },
     });
 
-    return NextResponse.json(stores, { status: 200 });
+    if (!seller) {
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(
+      {
+        user: {
+          id: seller.id,
+          firstName: seller.firstName,
+          lastName: seller.lastName,
+          email: seller.email,
+        },
+        stores: seller.stores,
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.log(error);
     return NextResponse.json(
