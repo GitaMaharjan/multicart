@@ -35,3 +35,26 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     }
 }
+
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+    try {
+        const token = request.cookies.get("token")?.value;
+        if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; userType: string };
+        if (decoded.userType !== "SELLER") return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+
+        // Check store ownership
+        const store = await prisma.store.findUnique({ where: { id: params.id } });
+        if (!store || store.sellerId !== decoded.userId) {
+            return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+        }
+
+        const deletedStore = await prisma.store.delete({ where: { id: params.id } });
+        return NextResponse.json(deletedStore, { status: 200 });
+
+    } catch (error) {
+        console.log(error);
+        return NextResponse.json({ error: "Failed to delete store" }, { status: 500 });
+    }
+}

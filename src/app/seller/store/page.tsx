@@ -83,8 +83,10 @@ const SellerStoreDashboard: React.FC = () => {
         setStores((prev) =>
           prev.map((s) => (s.id === storeData.id ? storeData : s))
         );
+        toast.success("Store updated successfully"); // ✅ Add toast here
       } else {
         setStores((prev) => [...prev, storeData]);
+        toast.success("Store created successfully"); // ✅ Add toast here
       }
 
       setFormData({ name: "", description: "" });
@@ -129,6 +131,28 @@ const SellerStoreDashboard: React.FC = () => {
     fetchStores();
   }, []);
 
+  const handleDeleteStore = async (storeId: string) => {
+    try {
+      const response = await fetch(`/api/store/${storeId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        console.log(err);
+        throw new Error(err.message || "Failed to delete store");
+      }
+      setStores((prevStores) =>
+        prevStores.filter((store) => store.id !== storeId)
+      );
+      toast.success("Store deleted successfully"); // ✅ Add toast here
+
+      console.log("Store deleted successfully");
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   return (
     <div className="min-h-screen  p-6">
       <div className="max-w-7xl mx-auto">
@@ -142,7 +166,7 @@ const SellerStoreDashboard: React.FC = () => {
           buttonLabel="Create New Store"
           isLoading={isLoading}
           onButtonClick={() => {
-            setEditStore(null); // important
+            setEditStore(null);
             setFormData({ name: "", description: "" });
             setShowAddModal(true);
           }}
@@ -156,9 +180,7 @@ const SellerStoreDashboard: React.FC = () => {
               store={store}
               onView={(id) => console.log("View store", id)}
               onEdit={handleEditStore}
-              onDelete={(id) =>
-                setStores((prev) => prev.filter((s) => s.id !== id))
-              }
+              onDelete={handleDeleteStore}
             />
           ))
         ) : (
