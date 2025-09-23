@@ -1,43 +1,50 @@
 "use client";
 import { X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  title?: string;
   children: React.ReactNode;
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
-  if (!isOpen) return null;
-
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
   const handleContentClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
 
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm animate-in fade-in duration-200"
-    >
-      <div
-        onClick={handleContentClick}
-        className="bg-white rounded-3xl p-8 w-full max-w-lg mx-4 shadow-2xl transform transition-all duration-300 scale-95 hover:scale-100"
-      >
-        <div className="flex items-center justify-between mb-6">
-          {title && (
-            <h3 className="text-2xl font-bold text-gray-900">{title}</h3>
-          )}
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          onClick={onClose}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm"
+        >
+          <motion.div
+            onClick={handleContentClick}
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="relative bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 rounded-3xl p-8 w-full max-w-lg mx-2 shadow-2xl"
           >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
+            {/* Close button in top-right corner */}
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            {/* Modal content */}
+            <div className="space-y-4">{children}</div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 

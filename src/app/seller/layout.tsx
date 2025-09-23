@@ -30,10 +30,10 @@ const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
       href: "/seller/dashboard",
     },
     {
-      id: "products",
-      icon: Package,
-      label: "Products",
-      href: "/seller/products",
+      id: "store",
+      icon: Store,
+      label: "Stores",
+      href: "/seller/store",
     },
     {
       id: "categories",
@@ -42,17 +42,19 @@ const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
       href: "/seller/categories",
     },
     {
+      id: "products",
+      icon: Package,
+      label: "Products",
+      href: "/seller/products",
+    },
+
+    {
       id: "orders",
       icon: ClipboardList,
       label: "Orders",
       href: "/seller/orders",
     },
-    {
-      id: "store",
-      icon: Store,
-      label: "Stores",
-      href: "/seller/store",
-    },
+
     { id: "profile", icon: User, label: "Profile", href: "/seller/profile" },
   ];
 

@@ -16,18 +16,19 @@ interface Product {
 
 interface CategoryCardProps {
   category: Category;
-  products: Product[];
-  onEdit?: (id: string) => void;
-  onDelete?: (id: string) => void;
+  // products: Product[];
+  // onEdit?: (id: string) => void;
+  // onDelete?: (id: string) => void;
 }
 
 const CategoryCard: React.FC<CategoryCardProps> = ({
   category,
-  products,
-  onEdit,
-  onDelete,
+  // products,
+  // onEdit,
+  // onDelete,
 }) => {
-  const categoryProducts = products.filter((p) => p.categoryId === category.id);
+  // const categoryProducts = products.filter((p) => p.categoryId === category.id);
+  const categoryProducts = [100, 122];
 
   return (
     <div className="bg-white rounded-3xl shadow-lg border border-gray-200 p-6 hover:shadow-2xl transform hover:scale-105 transition-all duration-300">
@@ -37,7 +38,7 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
           <Grid3X3 className="w-6 h-6 text-white" />
         </div>
 
-        <div className="flex items-center space-x-2">
+        {/* <div className="flex items-center space-x-2">
           <button
             onClick={() => onEdit?.(category.id)}
             className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
@@ -50,7 +51,7 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
           >
             <Trash2 className="w-5 h-5" />
           </button>
-        </div>
+        </div> */}
       </div>
 
       {/* Category Info */}

@@ -1,8 +1,24 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET = process.env.JWT_SECRET as string;
+
 
 export async function POST(request: NextRequest) {
     try {
+
+        const token = request.cookies.get("token")?.value
+
+        if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
+
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId: string, userType: string }
+
+        if (!decoded.userId || decoded.userType !== "SELLER") {
+            return NextResponse.json({ message: "Forbidden" }, { status: 403 })
+        }
+
+
         const body = await request.json()
         console.log("Category data received:", body);
 
@@ -10,6 +26,14 @@ export async function POST(request: NextRequest) {
 
         if (!name) {
             return NextResponse.json({ message: "Name is required" }, { status: 400 });
+        }
+
+        const store = await prisma.store.findFirst({
+            where: { sellerId: decoded.userId }
+        })
+
+        if (!store) {
+            return NextResponse.json({ message: "No store found for seller" }, { status: 404 });
         }
 
         const category = await prisma.category.create({
@@ -49,6 +73,8 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
     try {
+
+
         const categories = await prisma.category.findMany({
             orderBy: {
                 createdAt: "desc",

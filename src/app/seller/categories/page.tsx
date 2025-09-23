@@ -12,10 +12,16 @@ interface Category {
   description?: string;
   createdAt: string;
 }
+interface Store {
+  id: string;
+  name: string;
+  description?: string;
+}
 
 interface CategoryFormData {
   name: string;
   description?: string;
+  storeId: string;
 }
 
 const CategoriesPage = () => {
@@ -25,12 +31,27 @@ const CategoriesPage = () => {
   );
 
   const [categories, setCategories] = useState<Category[]>([]);
+  const [stores, setStores] = useState<Store[]>([]);
 
   // Open modal to add new category
   const handleAdd = () => {
     setSelectedCategory(null);
     setShowForm(true);
   };
+
+  const fetchStores = async () => {
+    try {
+      const res = await fetch("/api/store");
+      const data = await res.json();
+      setStores(data.stores);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  // Fetch categories on page load
+  useEffect(() => {
+    fetchStores();
+  }, []);
 
   const fetchCategories = async () => {
     try {
@@ -95,25 +116,19 @@ const CategoriesPage = () => {
           </span>
         </div>
       </div>
-      <div>
-        {categories.map((category) => (
-          <ul key={category.id}>
-            <li>{category.name}</li>
-          </ul>
-        ))}
-      </div>
+
       {/* Categories Grid  */}
-      {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {categories.map((category) => (
           <CategoryCard
             key={category.id}
             category={category}
-            products={products}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
+            // products={products}
+            // onEdit={handleEdit}
+            // onDelete={handleDelete}
           />
         ))}
-      </div> */}
+      </div>
 
       {/* Modal */}
       <Modal
@@ -125,7 +140,15 @@ const CategoriesPage = () => {
         title={selectedCategory ? "Edit Category" : "Add New Category"}
       >
         <CategoryForm
-          initialData={selectedCategory ?? undefined}
+          initialData={
+            selectedCategory
+              ? {
+                  name: selectedCategory.name,
+                  description: selectedCategory.description,
+                }
+              : undefined
+          }
+          storeData={stores}
           onSubmit={handleSubmit}
           onCancel={() => {
             setShowForm(false);
