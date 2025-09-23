@@ -11,6 +11,7 @@ interface Category {
   name: string;
   description?: string;
   createdAt: string;
+  storeId: string;
 }
 interface Store {
   id: string;
@@ -32,62 +33,85 @@ const CategoriesPage = () => {
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Open modal to add new category
+  // Fetch stores
+  const fetchStores = async () => {
+    try {
+      const res = await fetch("/api/store");
+      const data = await res.json();
+      setStores(data.stores || []);
+    } catch (error) {
+      console.error("Failed to fetch stores:", error);
+    }
+  };
+
+  // Fetch categories
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch("/api/category");
+      const data = await res.json();
+      setCategories(data || []);
+    } catch (error) {
+      console.error("Failed to fetch categories:", error);
+    }
+  };
+
+  // Fetch on mount
+  useEffect(() => {
+    fetchStores();
+    fetchCategories();
+  }, []);
+
   const handleAdd = () => {
     setSelectedCategory(null);
     setShowForm(true);
   };
 
-  const fetchStores = async () => {
-    try {
-      const res = await fetch("/api/store");
-      const data = await res.json();
-      setStores(data.stores);
-    } catch (error) {
-      console.error(error);
-    }
+  const handleEdit = (category: Category) => {
+    setSelectedCategory(category);
+    setShowForm(true);
   };
-  // Fetch categories on page load
-  useEffect(() => {
-    fetchStores();
-  }, []);
-
-  const fetchCategories = async () => {
-    try {
-      const res = await fetch("/api/category");
-      const data = await res.json();
-      setCategories(data);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  // Fetch categories on page load
-  useEffect(() => {
-    fetchCategories();
-  }, []);
 
   const handleSubmit = async (data: CategoryFormData) => {
+    setIsLoading(true);
     try {
-      const response = await fetch("/api/category", {
-        method: "POST",
+      const method = selectedCategory ? "PUT" : "POST";
+      console.log("Submitting category:", selectedCategory, data);
+
+      const url = selectedCategory
+        ? `/api/category/${selectedCategory.id}`
+        : "/api/category";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
+        credentials: "include", // send cookies
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create category");
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || err.message || "Failed to save category");
       }
-      const newCategory = await response.json();
-      console.log("Created category:", newCategory);
 
-      setCategories((prev) => [newCategory, ...prev]);
+      const savedCategory = await res.json();
+
+      if (selectedCategory) {
+        // Update category in state
+        setCategories((prev) =>
+          prev.map((cat) => (cat.id === savedCategory.id ? savedCategory : cat))
+        );
+      } else {
+        setCategories((prev) => [savedCategory, ...prev]);
+      }
+
       setShowForm(false);
       setSelectedCategory(null);
     } catch (error) {
-      console.log(error);
+      console.error("Category save error:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -96,66 +120,52 @@ const CategoriesPage = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
-          <h1 className="text-2xl sm:text-2xl font-bold text-gray-900 flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
             <Grid3X3 className="w-7 h-7 text-indigo-500" />
             Categories
           </h1>
           <div className="w-20 h-1 bg-indigo-500 rounded-full mt-2 mb-3"></div>
         </div>
 
-        {/* Add Category Button */}
-        <div className="relative flex flex-col items-center group">
-          <button
-            onClick={handleAdd}
-            className="flex items-center justify-center px-5 py-2 rounded-full border border-gray-300 bg-transparent text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-all duration-300"
-          >
-            <Plus className="w-5 h-5" />
-          </button>
-          <span className="mt-1 text-sm text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            Add Category
-          </span>
-        </div>
+        <button
+          onClick={handleAdd}
+          className="flex items-center justify-center px-5 py-2 rounded-full border border-gray-300 bg-transparent text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-all duration-300"
+        >
+          <Plus className="w-5 h-5" />
+        </button>
       </div>
 
-      {/* Categories Grid  */}
+      {/* Categories Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {categories.map((category) => (
           <CategoryCard
             key={category.id}
             category={category}
-            // products={products}
-            // onEdit={handleEdit}
-            // onDelete={handleDelete}
+            onEdit={() => handleEdit(category)}
           />
         ))}
       </div>
 
       {/* Modal */}
-      <Modal
-        isOpen={showForm}
-        onClose={() => {
-          setShowForm(false);
-          setSelectedCategory(null);
-        }}
-        title={selectedCategory ? "Edit Category" : "Add New Category"}
-      >
-        <CategoryForm
-          initialData={
-            selectedCategory
-              ? {
-                  name: selectedCategory.name,
-                  description: selectedCategory.description,
-                }
-              : undefined
-          }
-          storeData={stores}
-          onSubmit={handleSubmit}
-          onCancel={() => {
+      {showForm && (
+        <Modal
+          isOpen={showForm}
+          onClose={() => {
             setShowForm(false);
             setSelectedCategory(null);
           }}
-        />
-      </Modal>
+        >
+          <CategoryForm
+            initialData={selectedCategory || undefined}
+            storeData={stores}
+            onSubmit={handleSubmit}
+            onCancel={() => {
+              setShowForm(false);
+              setSelectedCategory(null);
+            }}
+          />
+        </Modal>
+      )}
     </div>
   );
 };

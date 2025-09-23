@@ -16,6 +16,7 @@ interface CategoryFormProps {
   initialData?: {
     name: string;
     description?: string;
+    storeId: string;
   };
   storeData: Store[];
   onSubmit: (data: {
@@ -28,7 +29,7 @@ interface CategoryFormProps {
 
 const CategoryForm: React.FC<CategoryFormProps> = ({
   initialData,
-  storeData,
+  storeData = [],
   onSubmit,
   onCancel,
 }) => {
@@ -36,26 +37,26 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
   const [description, setDescription] = useState(
     initialData?.description || ""
   );
-  const [selectStoreId, setSelectStoreId] = useState("");
+  const [storeId, setStoreId] = useState(initialData?.storeId || "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Set default store
+  // Set default store for create
   useEffect(() => {
     if (!initialData && storeData.length > 0) {
-      setSelectStoreId(storeData[0].id);
+      setStoreId(storeData[0].id);
     }
   }, [storeData, initialData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!initialData && !selectStoreId) {
-      setError("Please select a store before creating a category.");
+    if (!storeId) {
+      setError("Please select a store.");
       return;
     }
     setError("");
     setLoading(true);
-    await onSubmit({ name, description, storeId: selectStoreId });
+    onSubmit({ name, description, storeId });
     setLoading(false);
   };
 
@@ -72,42 +73,35 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
       </h2>
 
       <div className="space-y-2">
-        <Label htmlFor="name" className="text-gray-700 font-semibold">
-          Category Name
-        </Label>
+        <Label htmlFor="name">Category Name</Label>
         <Input
           id="name"
-          placeholder="Enter category name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md"
+          placeholder="Enter category name"
           required
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description" className="text-gray-700 font-semibold">
-          Description
-        </Label>
+        <Label htmlFor="description">Description</Label>
         <Textarea
           id="description"
-          placeholder="Enter category description (optional)"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md"
+          placeholder="Enter category description (optional)"
         />
       </div>
 
+      {/* Only show store dropdown if creating */}
       {!initialData && (
         <div className="space-y-2">
-          <Label htmlFor="store" className="text-gray-700 font-semibold">
-            Select Store
-          </Label>
+          <Label htmlFor="store">Select Store</Label>
           <select
             id="store"
-            value={selectStoreId}
-            onChange={(e) => setSelectStoreId(e.target.value)}
-            className="w-full border-gray-300 focus:border-pink-500 focus:ring-2 focus:ring-pink-200 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md p-2"
+            value={storeId}
+            onChange={(e) => setStoreId(e.target.value)}
+            className="w-full border rounded-xl p-2"
           >
             {storeData.map((store) => (
               <option key={store.id} value={store.id}>
@@ -126,16 +120,11 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
             variant="outline"
             onClick={onCancel}
             disabled={loading}
-            className="bg-white border-gray-300 hover:bg-gray-100 text-gray-700 shadow-md transition-transform transform hover:-translate-y-1"
           >
             Cancel
           </Button>
         )}
-        <Button
-          type="submit"
-          disabled={loading}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg transition-transform transform hover:-translate-y-1"
-        >
+        <Button type="submit" disabled={loading}>
           {loading
             ? "Saving..."
             : initialData

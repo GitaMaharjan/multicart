@@ -7,75 +7,64 @@ const JWT_SECRET = process.env.JWT_SECRET as string;
 
 export async function POST(request: NextRequest) {
     try {
+        // Get token
+        const token = request.cookies.get("token")?.value;
+        if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
-        const token = request.cookies.get("token")?.value
-
-        if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
-
-        const decoded = jwt.verify(token, JWT_SECRET) as { userId: string, userType: string }
-
+        // Decode token
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; userType: string };
         if (!decoded.userId || decoded.userType !== "SELLER") {
-            return NextResponse.json({ message: "Forbidden" }, { status: 403 })
+            return NextResponse.json({ message: "Forbidden" }, { status: 403 });
         }
 
-
-        const body = await request.json()
-        console.log("Category data received:", body);
-
-        const { name, description } = body
-
+        // Parse request body
+        const { name, description } = await request.json();
         if (!name) {
             return NextResponse.json({ message: "Name is required" }, { status: 400 });
         }
 
+        // Find the seller's store
         const store = await prisma.store.findFirst({
-            where: { sellerId: decoded.userId }
-        })
+            where: { sellerId: decoded.userId },
+        });
 
         if (!store) {
             return NextResponse.json({ message: "No store found for seller" }, { status: 404 });
         }
 
+        // Create category under the seller's existing store
         const category = await prisma.category.create({
             data: {
                 name,
                 description,
-                store: {
-                    create: {
-                        name: "Default Store",
-                        description: "Temporary store",
-                        seller: {
-                            create: {
-                                firstName: "Default",
-                                lastName: "Seller",
-                                email: `default${Date.now()}@seller.com`, // must be unique
-                                password: "password123", // hash in real app
-                                phoneNumber: "0000000000",
-                                gender: "OTHER",
-                                userType: "SELLER",
-                            },
-                        },
-                    }
-                }
-            }
-        })
+                storeId: store.id, // attach to the logged-in seller's store
+            },
+        });
 
         return NextResponse.json(category, { status: 201 });
-    }
-    catch (error) {
-        console.log(error)
+    } catch (error) {
+        console.error("Failed to create category:", error);
         return NextResponse.json({ error: "Failed to create category" }, { status: 500 });
-
     }
-
-
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
+        // Get token from cookies
+        const token = request.cookies.get("token")?.value;
+        if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; userType: string };
 
+        if (!decoded.userId || decoded.userType !== "SELLER") {
+            return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+        }
+
+        // Fetch only categories for stores that belong to this seller
         const categories = await prisma.category.findMany({
+            where: {
+                store: { sellerId: decoded.userId },
+            },
             orderBy: {
                 createdAt: "desc",
             },
@@ -86,11 +75,7 @@ export async function GET() {
 
         return NextResponse.json(categories, { status: 200 });
     } catch (error) {
-        console.log(error)
-        return NextResponse.json(
-            { error: "Failed to fetch categories" },
-            { status: 500 }
-        );
-
+        console.error("GET /category error:", error);
+        return NextResponse.json({ error: "Failed to fetch categories" }, { status: 500 });
     }
 }

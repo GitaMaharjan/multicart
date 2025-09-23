@@ -7,6 +7,7 @@ interface Category {
   name: string;
   description?: string;
   createdAt: string;
+  storeId: string;
 }
 
 interface Product {
@@ -17,14 +18,14 @@ interface Product {
 interface CategoryCardProps {
   category: Category;
   // products: Product[];
-  // onEdit?: (id: string) => void;
+  onEdit?: (category: Category) => void;
   // onDelete?: (id: string) => void;
 }
 
 const CategoryCard: React.FC<CategoryCardProps> = ({
   category,
   // products,
-  // onEdit,
+  onEdit,
   // onDelete,
 }) => {
   // const categoryProducts = products.filter((p) => p.categoryId === category.id);
@@ -38,20 +39,20 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
           <Grid3X3 className="w-6 h-6 text-white" />
         </div>
 
-        {/* <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2">
           <button
-            onClick={() => onEdit?.(category.id)}
+            onClick={() => onEdit?.(category)} // pass full category
             className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
           >
             <Edit2 className="w-5 h-5" />
           </button>
-          <button
+          {/* <button
             onClick={() => onDelete?.(category.id)}
             className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
           >
             <Trash2 className="w-5 h-5" />
-          </button>
-        </div> */}
+          </button> */}
+        </div>
       </div>
 
       {/* Category Info */}
