@@ -145,7 +145,7 @@ const SellerStoreDashboard: React.FC = () => {
       setStores((prevStores) =>
         prevStores.filter((store) => store.id !== storeId)
       );
-      toast.success("Store deleted successfully"); // ✅ Add toast here
+      toast.success("Store deleted successfully");
 
       console.log("Store deleted successfully");
     } catch (error) {

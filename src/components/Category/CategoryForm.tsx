@@ -89,7 +89,7 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Enter category description (optional)"
+          placeholder="Enter category description"
         />
       </div>
 

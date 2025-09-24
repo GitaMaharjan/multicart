@@ -53,9 +53,7 @@ export async function POST(request: NextRequest) {
         }
         )
 
-        if (user.userType === "SELLER") {
 
-        }
         const res = NextResponse.json({ message: "Login successful", token, userType: user.userType });
 
         res.cookies.set({

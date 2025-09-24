@@ -5,6 +5,7 @@ import { Plus, Grid3X3 } from "lucide-react";
 import CategoryCard from "@/components/Category/CategoryCard";
 import CategoryForm from "@/components/Category/CategoryForm";
 import Modal from "@/components/Category/Modal";
+import { toast } from "sonner";
 
 interface Category {
   id: string;
@@ -73,6 +74,27 @@ const CategoriesPage = () => {
     setShowForm(true);
   };
 
+  const handleDelete = async (category: Category) => {
+    try {
+      const response = await fetch(`/api/category/${category.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.log(error);
+        throw new Error(error.message || "Failed to delete category");
+      }
+      setCategories((prevCategories) =>
+        prevCategories.filter((cat) => cat.id !== category.id)
+      );
+      toast.success("Category deleted successfully");
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   const handleSubmit = async (data: CategoryFormData) => {
     setIsLoading(true);
     try {
@@ -98,12 +120,13 @@ const CategoriesPage = () => {
       const savedCategory = await res.json();
 
       if (selectedCategory) {
-        // Update category in state
         setCategories((prev) =>
           prev.map((cat) => (cat.id === savedCategory.id ? savedCategory : cat))
         );
+        toast.success("Category updated successfully!");
       } else {
         setCategories((prev) => [savedCategory, ...prev]);
+        toast.success("Category created successfully!");
       }
 
       setShowForm(false);
@@ -142,6 +165,7 @@ const CategoriesPage = () => {
             key={category.id}
             category={category}
             onEdit={() => handleEdit(category)}
+            onDelete={() => handleDelete(category)}
           />
         ))}
       </div>
