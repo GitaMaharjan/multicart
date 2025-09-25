@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Grid3X3 } from "lucide-react";
+import { Plus, Grid3X3, Layers } from "lucide-react";
 import CategoryCard from "@/components/Category/CategoryCard";
 import CategoryForm from "@/components/Category/CategoryForm";
-import Modal from "@/components/Category/Modal";
+import Modal from "@/components/Modal/Modal";
 import { toast } from "sonner";
+import Header from "@/components/Header/Header";
 
 interface Category {
   id: string;
@@ -140,23 +141,12 @@ const CategoriesPage = () => {
 
   return (
     <div className="space-y-10 p-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-            <Grid3X3 className="w-7 h-7 text-indigo-500" />
-            Categories
-          </h1>
-          <div className="w-20 h-1 bg-indigo-500 rounded-full mt-2 mb-3"></div>
-        </div>
-
-        <button
-          onClick={handleAdd}
-          className="flex items-center justify-center px-5 py-2 rounded-full border border-gray-300 bg-transparent text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-all duration-300"
-        >
-          <Plus className="w-5 h-5" />
-        </button>
-      </div>
+      <Header
+        icon={Layers}
+        title="Categories"
+        buttonIcon={Plus}
+        onButtonClick={handleAdd}
+      />
 
       {/* Categories Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
