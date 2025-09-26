@@ -1,21 +1,22 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Grid3X3, Plus } from "lucide-react";
-import ProductForm from "@/components/product/ProductForn";
 import Modal from "@/components/Modal/Modal";
 import ProductCard from "@/components/product/ProductCard";
 import Header from "@/components/Header/Header";
+import ProductForm from "@/components/product/ProductForm";
+import { toast } from "sonner";
 
 interface Product {
   id: string;
   name: string;
+  description: string;
   price: number;
   stock: number;
   categoryId: string;
-  image?: string;
+  image: string;
   createdAt?: string;
 }
-
 interface Category {
   id: string;
   name: string;
@@ -23,13 +24,31 @@ interface Category {
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories] = useState<Category[]>([
-    { id: "1", name: "Electronics" },
-    { id: "2", name: "Clothing" },
-    { id: "3", name: "Home" },
-  ]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
+  useEffect(() => {
+    async function fetchCategories() {
+      const res = await fetch("/api/category");
+      const data = await res.json();
+      setCategories(data);
+    }
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    async function fetchProducts() {
+      try {
+        const res = await fetch("/api/product");
+        const data = await res.json();
+        setProducts(data);
+      } catch (error) {
+        console.error("Failed to fetch products", error);
+      }
+    }
+    fetchProducts();
+  }, []);
 
   const handleCreate = () => {
     setEditingProduct(null);
@@ -41,28 +60,33 @@ export default function ProductsPage() {
     setShowModal(true);
   };
 
-  const handleDelete = (id: string) =>
+  const handleDelete = (id: string) => {
     setProducts(products.filter((p) => p.id !== id));
+    // Optional: send DELETE request to backend
+  };
 
-  const handleSubmit = (data: Omit<Product, "id" | "createdAt">) => {
-    if (editingProduct) {
-      setProducts(
-        products.map((p) =>
-          p.id === editingProduct.id ? { ...p, ...data } : p
-        )
-      );
-    } else {
-      setProducts([
-        ...products,
-        {
-          ...data,
-          id: Date.now().toString(),
-          createdAt: new Date().toISOString(),
-        },
-      ]);
+  const handleSubmit = async (formData: FormData) => {
+    try {
+      const res = await fetch("/api/product", {
+        method: editingProduct ? "PUT" : "POST",
+        body: formData,
+      });
+      const savedProduct = await res.json();
+
+      if (editingProduct) {
+        setProducts((prev) =>
+          prev.map((p) => (p.id === savedProduct.id ? savedProduct : p))
+        );
+        toast.success("Product updated successfully");
+      } else {
+        setProducts((prev) => [savedProduct, ...prev]);
+        toast.success("Product created successfully");
+      }
+
+      setShowModal(false);
+    } catch (error) {
+      console.error("Failed to save product", error);
     }
-    setShowModal(false);
-    setEditingProduct(null);
   };
 
   return (

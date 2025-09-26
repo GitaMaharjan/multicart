@@ -5,10 +5,11 @@ import { Edit2, Trash2, Package } from "lucide-react";
 interface Product {
   id: string;
   name: string;
+  description: string;
   price: number;
   stock: number;
   categoryId: string;
-  image?: string;
+  image: string;
   createdAt?: string;
 }
 
@@ -49,6 +50,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         <p className="text-sm text-gray-600 mb-4">
           Stock: {product.stock} units
         </p>
+        <p className="text-sm text-gray-600 mb-4">{product.description}</p>
         <div className="flex items-center justify-between">
           <span
             className={`px-2 py-1 rounded-full text-xs ${
