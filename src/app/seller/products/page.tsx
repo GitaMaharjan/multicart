@@ -67,9 +67,20 @@ export default function ProductsPage() {
 
   const handleSubmit = async (formData: FormData) => {
     try {
-      const res = await fetch("/api/product", {
-        method: editingProduct ? "PUT" : "POST",
+      const method = editingProduct ? "PUT" : "POST";
+      const url = editingProduct
+        ? `/api/product/${editingProduct.id}`
+        : `/api/product`;
+
+      // If editing and no new image, append existing image
+      if (editingProduct && !formData.get("image")) {
+        formData.append("image", editingProduct.image);
+      }
+
+      const res = await fetch(url, {
+        method,
         body: formData,
+        credentials: "include",
       });
       const savedProduct = await res.json();
 

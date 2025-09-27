@@ -110,7 +110,7 @@ const CategoriesPage = () => {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
-        credentials: "include", // send cookies
+        credentials: "include", 
       });
 
       if (!res.ok) {
