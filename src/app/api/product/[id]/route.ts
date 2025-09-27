@@ -56,8 +56,6 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         if (!categoryIds.includes(product.categoryId)) {
             return NextResponse.json({ message: "Forbidden: product does not belong to your categories" }, { status: 403 });
         }
-
-
         const formData = await request.formData();
         const name = formData.get("name") as string;
         const description = formData.get("description") as string;
@@ -116,4 +114,91 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         return NextResponse.json({ error: "Failed to update product" }, { status: 500 });
     }
 
+}
+
+
+export async function DELETE(request: NextRequest, context: { params: string }) {
+    const { params } = await context;
+
+    try {
+        const productId = params.id;
+
+        const token = request.cookies.get("token")?.value;
+        if (!token) {
+            return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET) as {
+            userId: string;
+            userType: string;
+        };
+        const { userId, userType } = decoded;
+
+        if (userType !== "SELLER") {
+            return NextResponse.json(
+                { message: "Forbidden: not a seller" },
+                { status: 403 }
+            );
+        }
+
+        const stores = await prisma.store.findMany({ where: { sellerId: userId } });
+        if (!stores.length) {
+            return NextResponse.json(
+                { message: "No stores found for this seller" },
+                { status: 404 }
+            );
+        }
+
+        const storeIds = stores.map((store) => store.id);
+
+        const categories = await prisma.category.findMany({
+            where: { storeId: { in: storeIds } },
+        });
+        if (!categories.length) {
+            return NextResponse.json(
+                { message: "No categories found for this seller's stores" },
+                { status: 404 }
+            );
+        }
+
+        const categoryIds = categories.map((c) => c.id);
+
+        const product = await prisma.product.findUnique({ where: { id: productId } });
+        if (!product) {
+            return NextResponse.json({ message: "Product not found" }, { status: 404 });
+        }
+        if (!categoryIds.includes(product.categoryId)) {
+            return NextResponse.json(
+                { message: "Forbidden: product does not belong to your categories" },
+                { status: 403 }
+            );
+        }
+
+        // --- Delete image from Cloudinary if exists ---
+        if (product.image) {
+            try {
+                // Extract public_id from URL
+                const publicId = product.image
+                    .split("/")
+                    .slice(-1)[0]
+                    .split(".")[0];
+                await cloudinary.v2.uploader.destroy(`products/${publicId}`);
+            } catch (err) {
+                console.warn("Failed to delete image from Cloudinary:", err);
+            }
+        }
+
+        // --- Delete product from DB ---
+        await prisma.product.delete({ where: { id: productId } });
+
+        return NextResponse.json(
+            { message: "Product deleted successfully" },
+            { status: 200 }
+        );
+    } catch (error) {
+        return NextResponse.json(
+            { error: "Failed to delete product" },
+            { status: 500 }
+        );
+    }
 }

@@ -61,8 +61,13 @@ export default function ProductsPage() {
   };
 
   const handleDelete = (id: string) => {
-    setProducts(products.filter((p) => p.id !== id));
-    // Optional: send DELETE request to backend
+    try {
+      fetch(`/api/product/${id}`, { method: "DELETE", credentials: "include" });
+      setProducts(products.filter((p) => p.id !== id));
+      toast.success("Product deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete product", error);
+    }
   };
 
   const handleSubmit = async (formData: FormData) => {
