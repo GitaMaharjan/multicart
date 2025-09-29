@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, FC, ChangeEvent, FormEvent } from "react";
+import React, { FC, useState } from "react";
 import {
   Eye,
   EyeOff,
@@ -8,102 +8,66 @@ import {
   ShoppingBag,
   ArrowRight,
 } from "lucide-react";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-type UserType = "CUSTOMER" | "SELLER";
+const signupSchema = z
+  .object({
+    firstName: z.string().min(1, "First name is required"),
+    lastName: z.string().min(1, "Last name is required"),
+    email: z
+      .string()
+      .min(1, "Email is required")
+      .email({ message: "Invalid email address" }),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    confirmPassword: z.string().min(1, "Confirm password is required"),
+    phoneNumber: z
+      .string()
+      .regex(/^\d{10}$/, "Phone number must be exactly 10 digits"),
+    gender: z.enum(["MALE", "FEMALE", "OTHER", "PREFER_NOT_TO_SAY"], {
+      error: "Please select your gender",
+    }),
+    userType: z.enum(["CUSTOMER", "SELLER"]),
+    termsAccepted: z.boolean().refine((val) => val === true, {
+      message: "You must accept the Terms and Privacy Policy",
+    }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Passwords do not match",
+  });
 
-interface SignupFormData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  phoneNumber: string;
-  gender: string;
-  userType: UserType;
-}
+type SignupFormData = z.infer<typeof signupSchema>;
 
 const SignupPage: FC = () => {
-  const [formData, setFormData] = useState<SignupFormData>({
-    firstName: "",
-    lastName: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    phoneNumber: "",
-    gender: "",
-    userType: "CUSTOMER",
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      phoneNumber: "",
+      gender: (undefined as unknown) as SignupFormData["gender"],
+      userType: "CUSTOMER",
+      termsAccepted: false,
+    },
   });
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [errors, setErrors] = useState<
-    Partial<Record<keyof SignupFormData, string>>
-  >({});
-  const [termsAccepted, setTermsAccepted] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
-  const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  };
-
-  const validateForm = () => {
-    const newErrors: Partial<Record<keyof SignupFormData, string>> = {};
-
-    if (!formData.firstName.trim())
-      newErrors.firstName = "First name is required";
-    if (!formData.lastName.trim()) newErrors.lastName = "Last name is required";
-
-    if (!formData.email.trim()) newErrors.email = "Email is required";
-    else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(formData.email))
-      newErrors.email = "Invalid email address";
-
-    if (!formData.password) newErrors.password = "Password is required";
-    if (!formData.confirmPassword)
-      newErrors.confirmPassword = "Confirm password is required";
-    if (
-      formData.password &&
-      formData.confirmPassword &&
-      formData.password !== formData.confirmPassword
-    )
-      newErrors.confirmPassword = "Passwords do not match";
-
-    if (formData.phoneNumber && !/^\d{10}$/.test(formData.phoneNumber))
-      newErrors.phoneNumber = "Phone number must be exactly 10 digits";
-
-    if (!formData.gender) newErrors.gender = "Gender is required";
-
-    return newErrors;
-  };
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (isLoading) return; // Prevent double submit
-    setIsLoading(true);
-
-    // Terms check first
-    if (!termsAccepted) {
-      toast.error("You must accept the Terms and Privacy Policy");
-      setIsLoading(false);
-      return;
-    }
-
-    const formErrors = validateForm();
-    if (Object.keys(formErrors).length > 0) {
-      setErrors(formErrors);
-
-      // Only show toast for password mismatch
-      // if (formErrors.confirmPassword) toast.error(formErrors.confirmPassword);
-
-      setIsLoading(false);
-      return;
-    }
-
-    setErrors({});
-
+  const onSubmit = async (formData: SignupFormData) => {
     try {
       const response = await fetch("/api/auth/signup", {
         method: "POST",
@@ -114,37 +78,17 @@ const SignupPage: FC = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        const errorMessage = data.message || "Something went wrong";
         toast.error("Sign up failed", {
-          description: errorMessage.includes("already exists")
-            ? "User already exists"
-            : errorMessage,
+          description: data.message || "Something went wrong",
         });
-        setFormData((prev) => ({ ...prev, password: "", confirmPassword: "" }));
-        setIsLoading(false);
         return;
       }
-
       toast.success("Signup Successful", {
         description: "Your account has been created",
       });
-
-      setFormData({
-        firstName: "",
-        lastName: "",
-        email: "",
-        password: "",
-        confirmPassword: "",
-        phoneNumber: "",
-        gender: "",
-        userType: "CUSTOMER",
-      });
-      setTermsAccepted(false);
-      // router.push("/login");
+      reset();
     } catch (err) {
       toast.error("Signup Failed", { description: (err as Error).message });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -153,7 +97,7 @@ const SignupPage: FC = () => {
       <div className="w-full max-w-2xl relative z-10 transform hover:scale-105 transition-transform duration-300">
         <form
           className="backdrop-blur-xl bg-white/10 rounded-3xl shadow-2xl border border-white/20 p-8 hover:bg-white/15 transition-all duration-300"
-          onSubmit={handleSubmit}
+          onSubmit={handleSubmit(onSubmit)}
         >
           {/* Header */}
           <div className="text-center mb-8">
@@ -170,36 +114,34 @@ const SignupPage: FC = () => {
 
           {/* User Type Selection */}
           <div className="mb-6 flex space-x-4">
-            <button
-              type="button"
-              onClick={() =>
-                setFormData((prev) => ({ ...prev, userType: "CUSTOMER" }))
-              }
-              className={`flex-1 p-4 rounded-xl border-2 transition-all duration-300 ${
-                formData.userType === "CUSTOMER"
-                  ? "border-purple-500 bg-purple-500/20 text-white"
-                  : "border-white/30 text-purple-200 hover:border-purple-400 hover:bg-white/10"
-              }`}
-            >
-              <Users className="w-6 h-6 mx-auto mb-2" />
-              <p className="font-semibold">Customer</p>
-              <p className="text-xs opacity-75">Buy products</p>
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                setFormData((prev) => ({ ...prev, userType: "SELLER" }))
-              }
-              className={`flex-1 p-4 rounded-xl border-2 transition-all duration-300 ${
-                formData.userType === "SELLER"
-                  ? "border-pink-500 bg-pink-500/20 text-white"
-                  : "border-white/30 text-purple-200 hover:border-pink-400 hover:bg-white/10"
-              }`}
-            >
-              <Store className="w-6 h-6 mx-auto mb-2" />
-              <p className="font-semibold">Seller</p>
-              <p className="text-xs opacity-75">Sell products</p>
-            </button>
+            {(["CUSTOMER", "SELLER"] as const).map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => setValue("userType", type)}
+                className={`flex-1 p-4 rounded-xl border-2 transition-all duration-300 ${
+                  watch("userType") === type
+                    ? type === "CUSTOMER"
+                      ? "border-purple-500 bg-purple-500/20 text-white"
+                      : "border-pink-500 bg-pink-500/20 text-white"
+                    : "border-white/30 text-purple-200 hover:border-purple-400 hover:bg-white/10"
+                }`}
+              >
+                {type === "CUSTOMER" ? (
+                  <>
+                    <Users className="w-6 h-6 mx-auto mb-2" />
+                    <p className="font-semibold">Customer</p>
+                    <p className="text-xs opacity-75">Buy products</p>
+                  </>
+                ) : (
+                  <>
+                    <Store className="w-6 h-6 mx-auto mb-2" />
+                    <p className="font-semibold">Seller</p>
+                    <p className="text-xs opacity-75">Sell products</p>
+                  </>
+                )}
+              </button>
+            ))}
           </div>
 
           {/* Form Fields */}
@@ -207,139 +149,119 @@ const SignupPage: FC = () => {
             {/* First & Last Name */}
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col">
-                <div className="min-h-[1rem]">
-                  {errors.firstName && (
-                    <p className="text-red-500 text-xs">{errors.firstName}</p>
-                  )}
-                </div>
                 <input
                   type="text"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleChange}
                   placeholder="First Name"
+                  {...register("firstName")}
                   className="w-full pl-3 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200"
                 />
+                {errors.firstName && (
+                  <p className="mt-1 text-xs text-red-500">
+                    {errors.firstName.message}
+                  </p>
+                )}
               </div>
               <div className="flex flex-col">
-                <div className="min-h-[1rem]">
-                  {errors.lastName && (
-                    <p className="text-red-500 text-xs">{errors.lastName}</p>
-                  )}
-                </div>
                 <input
                   type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleChange}
+                  {...register("lastName")}
                   placeholder="Last Name"
                   className="w-full pl-3 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200"
                 />
+                {errors.lastName && (
+                  <p className="mt-1 text-xs text-red-500">
+                    {errors.lastName.message}
+                  </p>
+                )}
               </div>
             </div>
 
             {/* Email */}
             <div className="flex flex-col">
-              <div className="min-h-[1rem]">
-                {errors.email && (
-                  <p className="text-red-500 text-xs">{errors.email}</p>
-                )}
-              </div>
               <input
                 type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
+                {...register("email")}
                 placeholder="Email Address"
                 className="w-full pl-3 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200"
               />
+              {errors.email && (
+                <p className="mt-1 text-xs text-red-500">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
 
             {/* Password */}
             <div className="flex flex-col relative">
-              <div className="min-h-[1rem]">
-                {errors.password && (
-                  <p className="text-red-500 text-xs">{errors.password}</p>
-                )}
-              </div>
               <input
                 type={showPassword ? "text" : "password"}
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
+                {...register("password")}
                 placeholder="Password"
                 className="w-full pl-3 pr-10 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-purple-300 hover:text-white"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-purple-300 hover:text-white"
               >
                 {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
+                  <EyeOff className="h-5 w-5" />
                 ) : (
-                  <Eye className="h-4 w-4" />
+                  <Eye className="h-5 w-5" />
                 )}
               </button>
+              {errors.password && (
+                <p className="mt-1 text-xs text-red-500">
+                  {errors.password.message}
+                </p>
+              )}
             </div>
 
             {/* Confirm Password */}
             <div className="flex flex-col relative">
-              <div className="min-h-[1rem]">
-                {errors.confirmPassword && (
-                  <p className="text-red-500 text-xs">
-                    {errors.confirmPassword}
-                  </p>
-                )}
-              </div>
               <input
                 type={showConfirmPassword ? "text" : "password"}
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
+                {...register("confirmPassword")}
                 placeholder="Confirm Password"
                 className="w-full pl-3 pr-10 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200"
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-purple-300 hover:text-white"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-purple-300 hover:text-white"
               >
                 {showConfirmPassword ? (
-                  <EyeOff className="h-4 w-4" />
+                  <EyeOff className="h-5 w-5" />
                 ) : (
-                  <Eye className="h-4 w-4" />
+                  <Eye className="h-5 w-5" />
                 )}
               </button>
+              {errors.confirmPassword && (
+                <p className="mt-1 text-xs text-red-500">
+                  {errors.confirmPassword.message}
+                </p>
+              )}
             </div>
 
             {/* Phone & Gender */}
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col">
-                <div className="min-h-[1rem]">
-                  {errors.phoneNumber && (
-                    <p className="text-red-500 text-xs">{errors.phoneNumber}</p>
-                  )}
-                </div>
                 <input
                   type="tel"
-                  name="phoneNumber"
-                  value={formData.phoneNumber}
-                  onChange={handleChange}
+                  {...register("phoneNumber")}
                   placeholder="Phone"
                   className="w-full pl-3 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200"
                 />
+                {errors.phoneNumber && (
+                  <p className="mt-1 text-xs text-red-500">
+                    {errors.phoneNumber.message}
+                  </p>
+                )}
               </div>
               <div className="flex flex-col">
-                <div className="min-h-[1rem]">
-                  {errors.gender && (
-                    <p className="text-red-500 text-xs">{errors.gender}</p>
-                  )}
-                </div>
                 <select
-                  name="gender"
-                  value={formData.gender}
-                  onChange={handleChange}
+                  {...register("gender")}
+                  defaultValue=""
                   className="w-full px-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white"
                 >
                   <option className="text-black" value="">
@@ -358,6 +280,11 @@ const SignupPage: FC = () => {
                     Prefer not to say
                   </option>
                 </select>
+                {errors.gender && (
+                  <p className="mt-1 text-xs text-red-500">
+                    {errors.gender.message}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -365,8 +292,7 @@ const SignupPage: FC = () => {
             <div className="flex items-start space-x-3">
               <input
                 type="checkbox"
-                checked={termsAccepted}
-                onChange={(e) => setTermsAccepted(e.target.checked)}
+                {...register("termsAccepted")}
                 id="terms"
                 className="mt-1 w-4 h-4 text-purple-600 bg-white/10 border-white/30 rounded"
               />
@@ -387,14 +313,19 @@ const SignupPage: FC = () => {
                 </button>
               </label>
             </div>
+            {errors.termsAccepted && (
+              <p className="mt-1 text-xs text-red-500">
+                {errors.termsAccepted.message}
+              </p>
+            )}
 
             {/* Submit */}
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isSubmitting}
               className="w-full py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? (
+              {isSubmitting ? (
                 <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full mx-auto animate-spin" />
               ) : (
                 <span className="flex items-center justify-center gap-2">

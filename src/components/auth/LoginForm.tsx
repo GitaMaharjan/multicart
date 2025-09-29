@@ -1,39 +1,47 @@
 "use client";
 
-import React, { useState, FC, FormEvent, ChangeEvent } from "react";
+import React, { useState, FC } from "react";
 import { Eye, EyeOff, Mail, Lock, ShoppingBag, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-interface LoginFormData {
-  email: string;
-  password: string;
-}
+// ✅ Zod schema
+const loginSchema = z.object({
+  email: z.string().min(1, "Email is required").email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
+
 const LoginPage: FC = () => {
-  const [loginData, setLoginData] = useState<LoginFormData>({
-    email: "",
-    password: "",
-  });
-  const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setLoginData((prevData) => ({ ...prevData, [name]: value }));
-  };
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
-
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(loginData),
+        body: JSON.stringify(data),
       });
+
       const result = await response.json();
       if (response.ok) {
         if (result.userType === "SELLER") {
@@ -58,7 +66,7 @@ const LoginPage: FC = () => {
       <div className="w-full max-w-md relative z-10 transform hover:scale-105 transition-transform duration-300">
         <form
           className="backdrop-blur-xl bg-white/10 rounded-3xl shadow-2xl border border-white/20 p-8 hover:bg-white/15 transition-all duration-300"
-          onSubmit={handleSubmit}
+          onSubmit={handleSubmit(onSubmit)}
         >
           {/* Header */}
           <div className="text-center mb-8">
@@ -82,13 +90,15 @@ const LoginPage: FC = () => {
               </div>
               <input
                 type="email"
-                name="email"
-                value={loginData.email}
-                onChange={handleChange}
                 placeholder="Enter your email"
+                {...register("email")}
                 className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:bg-white/15 transition-all duration-300"
-                required
               />
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
 
             {/* Password */}
@@ -98,17 +108,14 @@ const LoginPage: FC = () => {
               </div>
               <input
                 type={showPassword ? "text" : "password"}
-                name="password"
-                value={loginData.password}
-                onChange={handleChange}
                 placeholder="Enter your password"
+                {...register("password")}
                 className="w-full pl-12 pr-12 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:bg-white/15 transition-all duration-300"
-                required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-4 flex items-center text-purple-300 hover:text-white transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-purple-300 hover:text-white transition-colors"
               >
                 {showPassword ? (
                   <EyeOff className="h-5 w-5" />
@@ -116,6 +123,11 @@ const LoginPage: FC = () => {
                   <Eye className="h-5 w-5" />
                 )}
               </button>
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.password.message}
+                </p>
+              )}
             </div>
 
             {/* Login Button */}
@@ -138,7 +150,7 @@ const LoginPage: FC = () => {
           {/* Footer */}
           <div className="mt-8 text-center">
             <p className="text-purple-200">
-              Dont have an account?{" "}
+              Don’t have an account?{" "}
               <button className="text-pink-300 hover:text-pink-200 font-semibold transition-colors hover:underline">
                 Sign up
               </button>
