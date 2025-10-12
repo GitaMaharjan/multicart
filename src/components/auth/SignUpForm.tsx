@@ -40,8 +40,11 @@ const signupSchema = z
   });
 
 type SignupFormData = z.infer<typeof signupSchema>;
+interface SignUpPageProps {
+  onSwitchToLogin?: () => void;
+}
 
-const SignupPage: FC = () => {
+const SignupPage: FC<SignUpPageProps> = ({ onSwitchToLogin }) => {
   const {
     register,
     handleSubmit,
@@ -339,7 +342,10 @@ const SignupPage: FC = () => {
           <div className="mt-6 text-center">
             <p className="text-purple-200">
               Already have an account?{" "}
-              <button className="text-pink-300 hover:text-pink-200 font-semibold underline">
+              <button
+                className="text-pink-300 hover:text-pink-200 font-semibold underline"
+                onClick={onSwitchToLogin}
+              >
                 Sign in
               </button>
             </p>

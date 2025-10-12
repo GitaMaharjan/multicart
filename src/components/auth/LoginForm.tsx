@@ -7,16 +7,20 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { on } from "events";
 
 // ✅ Zod schema
 const loginSchema = z.object({
   email: z.string().min(1, "Email is required").email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
+interface LoginPageProps {
+  onSwitchToSignUp?: () => void;
+}
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-const LoginPage: FC = () => {
+const LoginPage: FC<LoginPageProps> = ({ onSwitchToSignUp }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -151,7 +155,10 @@ const LoginPage: FC = () => {
           <div className="mt-8 text-center">
             <p className="text-purple-200">
               Don’t have an account?{" "}
-              <button className="text-pink-300 hover:text-pink-200 font-semibold transition-colors hover:underline">
+              <button
+                className="text-pink-300 hover:text-pink-200 font-semibold transition-colors hover:underline"
+                onClick={onSwitchToSignUp}
+              >
                 Sign up
               </button>
             </p>

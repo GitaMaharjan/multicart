@@ -6,15 +6,12 @@ import React, { useEffect, useState } from "react";
 
 const AuthPage = () => {
   const [currentPage, setCurrentPage] = useState<"login" | "signup">("login");
-  const router = useRouter();
 
   useEffect(() => {
     // Call logout API to clear token if any
     fetch("/api/auth/logout", {
       method: "POST",
       credentials: "include",
-    }).finally(() => {
-      router.replace("/auth");
     });
   }, []);
 
@@ -47,7 +44,11 @@ const AuthPage = () => {
       </div>
 
       {/* Render selected page */}
-      {currentPage === "login" ? <LoginPage /> : <SignupPage />}
+      {currentPage === "login" ? (
+        <LoginPage onSwitchToSignUp={() => setCurrentPage("signup")} />
+      ) : (
+        <SignupPage onSwitchToLogin={() => setCurrentPage("login")} />
+      )}
     </div>
   );
 };
