@@ -29,13 +29,13 @@ export function middleware(req: NextRequest) {
     try {
         const decoded = jwt.verify(token, JWT_SECRET) as { userType: string };
 
-        // ✅ Only sellers can access /seller/*
+        // Only sellers can access /seller/*
         if (pathname.startsWith("/seller") && decoded.userType !== "SELLER") {
             const homeUrl = new URL("/home", req.url);
             return NextResponse.redirect(homeUrl);
         }
 
-        // ✅ Only customers can access /home/*
+        //Only customers can access /home/*
         if (pathname.startsWith("/home") && decoded.userType === "SELLER") {
             const dashboardUrl = new URL("/seller/dashboard", req.url);
             return NextResponse.redirect(dashboardUrl);

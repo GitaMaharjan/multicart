@@ -3,57 +3,23 @@ import Head from "next/head";
 import { Inter } from "next/font/google";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import jwt_decode from "jwt-decode";
 const inter = Inter({ subsets: ["latin"] });
-
-interface UserData {
-  userId: string;
-  email: string;
-  userType: string;
-  name?: string;
-}
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Home() {
   const router = useRouter();
-  const [user, setUser] = useState<UserData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading, logout, refreshUser, isCustomer } = useAuth();
 
   useEffect(() => {
-    async function fetchUser() {
-      try {
-        const response = await fetch("/api/me", {
-          method: "GET",
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          // Not authenticated → redirect to login
-          router.push("/auth");
-          return;
-        }
-        const data = await response.json();
-        setUser(data);
-      } catch (error) {
-        console.error("Error fetching user:", error);
-        router.push("/auth");
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchUser();
-  }, [router]);
-
-  const handleLogout = async () => {
-    try {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      });
+    if (!loading && !user) {
       router.push("/auth");
-    } catch (err) {
-      console.error("Logout failed:", err);
     }
-  };
+    // If logged in but not a customer (e.g., seller tries to visit)
+    if (!loading && user && !isCustomer) {
+      router.push("/seller/dashboard");
+    }
+  }, [user, loading, router, isCustomer]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-600">
@@ -61,6 +27,8 @@ export default function Home() {
       </div>
     );
   }
+  if (!user) return null; // prevent flash before redirect
+
   return (
     <div className={`min-h-screen bg-gray-50 ${inter.className}`}>
       <Head>
@@ -104,7 +72,7 @@ export default function Home() {
           </nav>
           <div className="text-gray-700 hover:text-blue-600 transition-colors">
             <button
-              onClick={handleLogout}
+              onClick={logout}
               className="bg-green-100 text-blue-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors"
             >
               Logout{" "}

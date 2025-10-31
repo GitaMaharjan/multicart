@@ -7,9 +7,9 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { on } from "events";
+import { useAuth } from "@/contexts/AuthContext";
 
-// ✅ Zod schema
+// Zod schema
 const loginSchema = z.object({
   email: z.string().min(1, "Email is required").email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
@@ -21,9 +21,9 @@ interface LoginPageProps {
 type LoginFormData = z.infer<typeof loginSchema>;
 
 const LoginPage: FC<LoginPageProps> = ({ onSwitchToSignUp }) => {
+  const { login, loading } = useAuth();
+
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
 
   const {
     register,
@@ -38,30 +38,12 @@ const LoginPage: FC<LoginPageProps> = ({ onSwitchToSignUp }) => {
   });
 
   const onSubmit = async (data: LoginFormData) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      const result = await response.json();
-      if (response.ok) {
-        if (result.userType === "SELLER") {
-          router.push(result.redirect || "/seller/dashboard");
-        } else if (result.userType === "CUSTOMER") {
-          toast.success(result.message);
-          router.push(result.redirect || "/home");
-        }
-      } else {
-        toast.error(result.message || "Login failed");
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error("An unexpected error occurred. Please try again.");
-    } finally {
-      setIsLoading(false);
+    const result = await login(data);
+    if (result.ok) {
+      toast.success("Logged in successfully");
+    } else {
+      toast.error(result.message || "Login failed");
+      return;
     }
   };
 
@@ -137,10 +119,10 @@ const LoginPage: FC<LoginPageProps> = ({ onSwitchToSignUp }) => {
             {/* Login Button */}
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={loading}
               className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 group"
             >
-              {isLoading ? (
+              {loading ? (
                 <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full mx-auto animate-spin" />
               ) : (
                 <span className="flex items-center justify-center gap-2">

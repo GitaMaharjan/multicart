@@ -10,8 +10,6 @@ const loginSchema = z.object({
     password: z.string().min(6, { message: "Password must be at least 6 characters" }),
 })
 
-
-
 export async function POST(request: NextRequest) {
     const JWT_SECRET = process.env.JWT_SECRET;
 

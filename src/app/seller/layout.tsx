@@ -13,12 +13,14 @@ import {
   Store,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SellerLayoutProps {
   children: React.ReactNode;
 }
 
 const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
+  const { logout, loading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
 
@@ -70,18 +72,6 @@ const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
     };
   }, [sidebarOpen]);
 
-  const handleLogout = async () => {
-    try {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      });
-      router.push("/auth");
-    } catch (err) {
-      console.error("Logout failed", err);
-    }
-  };
-
   const Sidebar: React.FC = () => (
     <div
       className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform ${
@@ -111,12 +101,32 @@ const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
       {/* Logout at bottom */}
       <div className="p-4 flex-shrink-0">
         <button
-          onClick={handleLogout}
+          onClick={logout}
+          disabled={loading}
+          className={`w-full flex items-center px-4 py-3 rounded-lg transition-all duration-200
+    ${
+      loading ? "opacity-50 cursor-not-allowed" : "text-red-600 hover:bg-red-50"
+    }`}
+        >
+          {loading ? (
+            <div className="flex items-center justify-center w-full">
+              <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <>
+              <LogOut className="w-5 h-5 mr-3" />
+              Logout
+            </>
+          )}
+        </button>
+
+        {/* <button
+          onClick={logout}
           className="w-full flex items-center px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
         >
           <LogOut className="w-5 h-5 mr-3" />
           Logout
-        </button>
+        </button> */}
       </div>
     </div>
   );
