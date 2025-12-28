@@ -50,8 +50,6 @@ export async function POST(request: NextRequest) {
             expiresIn: '1h'
         }
         )
-
-
         const res = NextResponse.json({ message: "Login successful", token, userType: user.userType });
 
         res.cookies.set({

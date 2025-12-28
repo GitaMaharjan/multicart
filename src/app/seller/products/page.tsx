@@ -126,7 +126,9 @@ export default function ProductsPage() {
           ))}
         </div>
       ) : (
-        <p className="text-gray-600">No products available.</p>
+        <p className="text-gray-600">
+          No products found. Click the + button to add one.
+        </p>
       )}
 
       <Modal isOpen={showModal} onClose={() => setShowModal(false)}>

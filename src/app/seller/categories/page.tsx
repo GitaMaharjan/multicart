@@ -110,7 +110,7 @@ const CategoriesPage = () => {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
-        credentials: "include", 
+        credentials: "include",
       });
 
       if (!res.ok) {
@@ -149,16 +149,22 @@ const CategoriesPage = () => {
       />
 
       {/* Categories Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {categories.map((category) => (
-          <CategoryCard
-            key={category.id}
-            category={category}
-            onEdit={() => handleEdit(category)}
-            onDelete={() => handleDelete(category)}
-          />
-        ))}
-      </div>
+      {categories.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {categories.map((category) => (
+            <CategoryCard
+              key={category.id}
+              category={category}
+              onEdit={() => handleEdit(category)}
+              onDelete={() => handleDelete(category)}
+            />
+          ))}
+        </div>
+      ) : (
+        <p className="text-gray-600">
+          No categories found. Click the + button to add one.
+        </p>
+      )}
 
       {/* Modal */}
       {showForm && (
